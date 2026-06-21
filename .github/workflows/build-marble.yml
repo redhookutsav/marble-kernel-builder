@@ -152,8 +152,8 @@ jobs:
       - name: Fetch Android kernel clang
         run: |
           source config/marble.env
-          git clone --depth=1 --filter=blob:none --sparse --branch "${ANDROID_CLANG_REF}" "${ANDROID_CLANG_REPO}" android-clang
-          git -C android-clang sparse-checkout set "${ANDROID_CLANG_VERSION}"
+          mkdir -p "android-clang/${ANDROID_CLANG_VERSION}"
+          curl -fsSL "${ANDROID_CLANG_ARCHIVE_URL}" | tar -xz -C "android-clang/${ANDROID_CLANG_VERSION}"
           test -x "${ANDROID_CLANG_BIN}/clang"
           "${ANDROID_CLANG_BIN}/clang" --version
 
