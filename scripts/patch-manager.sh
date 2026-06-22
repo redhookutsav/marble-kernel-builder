@@ -20,5 +20,5 @@ pushd "${KERNEL_DIR}" >/dev/null
 setup_url="https://raw.githubusercontent.com/${manager_repo}/${manager_commit}/${manager_setup_path}"
 echo "Applying ${MANAGER} from ${manager_repo}@${manager_commit}"
 curl -fsSL "${setup_url}" -o /tmp/manager-setup.sh
-bash /tmp/manager-setup.sh
+bash /tmp/manager-setup.sh "${manager_ref}"
 popd >/dev/null
