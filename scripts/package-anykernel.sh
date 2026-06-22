@@ -24,11 +24,11 @@ fi
 zip_name="Marble-${variant}-${BUILD_SCOPE}-dev-${run_number}.zip"
 work_dir="$(mktemp -d)"
 git clone --depth=1 "${ANYKERNEL3_REPO}" "${work_dir}/ak3"
-rsync -a --delete ak3/ "${work_dir}/ak3/"
+rsync -a ak3/ "${work_dir}/ak3/"
 cp "${image_path}" "${work_dir}/ak3/Image"
 
 pushd "${work_dir}/ak3" >/dev/null
-zip -r9 "${OLDPWD}/${release_dir}/${zip_name}" . -x ".git/*" "README.md" "LICENSE"
+zip -r9 "${OLDPWD}/${release_dir}/${zip_name}" . -x ".git/*" "README.md" "*placeholder*"
 popd >/dev/null
 
 pushd "${release_dir}" >/dev/null

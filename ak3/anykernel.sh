@@ -11,7 +11,7 @@ supported.versions=
 supported.patchlevels=
 '; }
 
-block=/dev/block/by-name/boot;
+block=boot;
 is_slot_device=auto;
 ramdisk_compression=auto;
 patch_vbmeta_flag=auto;
