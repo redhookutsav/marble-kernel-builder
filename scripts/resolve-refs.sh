@@ -18,10 +18,12 @@ source_commit="$(git -C "${KERNEL_DIR}" rev-parse HEAD)"
 manager_repo=""
 manager_effective_ref=""
 manager_commit=""
+manager_tag=""
 manager_setup_path=""
 susfs_effective_ref=""
 susfs_commit=""
 susfs_reported_version=""
+susfs_url=""
 
 if [[ "${MANAGER}" != "none" ]]; then
   manager_repo="$(jq -r --arg manager "${MANAGER}" '.[$manager].repo' config/managers.json)"
@@ -50,6 +52,17 @@ if [[ "${MANAGER}" != "none" ]]; then
     echo "::error::Could not resolve official manager ref ${manager_repo}@${manager_effective_ref}"
     exit 1
   fi
+
+  # Resolve the nearest git tag for this commit (for human-readable version display).
+  # git ls-remote outputs both tag objects (no suffix) and dereferenced commits (^{} suffix).
+  # We match the commit SHA against ^{} lines first (annotated tags), then plain lines (lightweight).
+  all_tags="$(git ls-remote --tags "https://github.com/${manager_repo}.git" 2>/dev/null || true)"
+  manager_tag="$(echo "${all_tags}" | awk -v sha="${manager_commit}" \
+    '$1==sha && /\^\{\}$/ { sub(/.*refs\/tags\//, "", $2); sub(/\^\{\}/, "", $2); print; exit }')"
+  if [[ -z "${manager_tag}" ]]; then
+    manager_tag="$(echo "${all_tags}" | awk -v sha="${manager_commit}" \
+      '$1==sha { sub(/.*refs\/tags\//, "", $2); print; exit }')"
+  fi
 fi
 
 if [[ "${ENABLE_SUSFS}" == "true" ]]; then
@@ -75,6 +88,9 @@ if [[ "${ENABLE_SUSFS}" == "true" ]]; then
   )"
   rm -rf "${tmp_susfs}"
 
+  # GitLab commit URL for traceability in release notes
+  susfs_url="https://gitlab.com/simonpunk/susfs4ksu/-/commit/${susfs_commit}"
+
   expected="${SUSFS_EXPECTED_VERSION}"
   if [[ -z "${expected}" && "${SUSFS_VERSION}" != "custom" ]]; then
     expected="${SUSFS_VERSION}"
@@ -91,6 +107,7 @@ fi
   echo "manager_repo=${manager_repo}"
   echo "manager_ref=${manager_effective_ref}"
   echo "manager_commit=${manager_commit}"
+  echo "manager_tag=${manager_tag}"
   echo "manager_setup_path=${manager_setup_path}"
   echo "enable_susfs=${ENABLE_SUSFS}"
   echo "susfs_version=${SUSFS_VERSION}"
@@ -98,4 +115,5 @@ fi
   echo "susfs_ref=${susfs_effective_ref}"
   echo "susfs_commit=${susfs_commit}"
   echo "susfs_reported_version=${susfs_reported_version}"
+  echo "susfs_url=${susfs_url}"
 } | tee release/resolved-refs.env

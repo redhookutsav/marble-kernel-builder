@@ -22,32 +22,39 @@ fi
 
 manager_label="${MANAGER}"
 case "${MANAGER}" in
-  none) manager_label="NoRoot" ;;
-  kernelsu) manager_label="KernelSU" ;;
+  none)         manager_label="NoRoot" ;;
+  kernelsu)     manager_label="KernelSU" ;;
   kernelsu-next) manager_label="KSUNext" ;;
-  sukisu-ultra) manager_label="SukiSUUltra" ;;
-  resukisu) manager_label="ReSukiSU" ;;
+  sukisu-ultra) manager_label="SukiSU-Ultra" ;;
+  resukisu)     manager_label="ReSukiSU" ;;
 esac
 
-manager_ref_label="${manager_ref:-${MANAGER_REF:-none}}"
-manager_ref_label="$(echo "${manager_ref_label}" | sed -E 's/[^A-Za-z0-9._-]+/-/g')"
-if [[ "${manager_ref_label}" =~ ^[0-9a-fA-F]{40}$ ]]; then
-  manager_ref_label="${manager_ref_label:0:7}"
+# Use version tag when available (e.g. v3.2.0), otherwise fall back to short SHA.
+manager_version="${manager_tag:-}"
+if [[ -z "${manager_version}" && -n "${manager_commit:-}" ]]; then
+  manager_version="${manager_commit:0:7}"
 fi
-manager_short="${manager_commit:-none}"
-manager_short="${manager_short:0:7}"
+if [[ -z "${manager_version}" ]]; then
+  manager_version="none"
+fi
 
 susfs_label="NoSUSFS"
-susfs_short="none"
 if [[ "${ENABLE_SUSFS}" == "true" ]]; then
-  susfs_label="SuSFS-${susfs_reported_version:-${SUSFS_VERSION:-unknown}}"
-  susfs_short="${susfs_commit:-unknown}"
-  susfs_short="${susfs_short:0:7}"
+  susfs_label="SUSFS-${susfs_reported_version:-${SUSFS_VERSION:-unknown}}"
 fi
 
 build_date="${BUILD_DATE:-$(date -u +%Y%m%d)}"
 
-zip_name="AK3_Marble_android12-5.10_${manager_label}-${manager_ref_label}_${manager_short}_${susfs_label}_${susfs_short}_${build_date}_r${run_number}.zip"
+# Final format: Marble_<Manager>-<version>_<SUSFS>_<date>_r<run>.zip
+# Example: Marble_KSUNext-v3.2.0_SUSFS-v2.2.0_20260622_r46.zip
+# Example: Marble_KernelSU-v1.0.3_NoSUSFS_20260622_r12.zip
+# Example: Marble_NoRoot_NoSUSFS_20260622_r5.zip
+if [[ "${MANAGER}" == "none" ]]; then
+  zip_name="Marble_NoRoot_NoSUSFS_${build_date}_r${run_number}.zip"
+else
+  zip_name="Marble_${manager_label}-${manager_version}_${susfs_label}_${build_date}_r${run_number}.zip"
+fi
+
 work_dir="$(mktemp -d)"
 git clone --depth=1 "${ANYKERNEL3_REPO}" "${work_dir}/ak3"
 rsync -a ak3/ "${work_dir}/ak3/"

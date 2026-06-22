@@ -178,6 +178,9 @@ jobs:
       - name: Apply manager
         run: bash scripts/patch-manager.sh
 
+      - name: Read manager version
+        run: bash scripts/read-manager-version.sh
+
       - name: Apply SUSFS
         run: bash scripts/apply-susfs.sh
 
