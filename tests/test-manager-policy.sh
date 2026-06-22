@@ -17,6 +17,7 @@ expect_validation_failure() {
      SOURCE_REF=main \
      MANAGER="${manager}" \
      ENABLE_SUSFS="${enable_susfs}" \
+     EXPERIMENTAL_KSUNEXT_DEV_SUSFS=false \
      bash scripts/validate-inputs.sh >/dev/null 2>&1; then
     fail "validation accepted manager=${manager} enable_susfs=${enable_susfs}"
   fi
@@ -30,6 +31,7 @@ expect_validation_success() {
   SOURCE_REF=main \
   MANAGER="${manager}" \
   ENABLE_SUSFS="${enable_susfs}" \
+  EXPERIMENTAL_KSUNEXT_DEV_SUSFS=false \
   bash scripts/validate-inputs.sh >/dev/null
 }
 
