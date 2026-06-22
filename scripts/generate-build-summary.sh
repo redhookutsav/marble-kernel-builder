@@ -34,6 +34,11 @@ short_commit() {
   fi
 }
 
+# Encode a string for use in shields.io badge path segments.
+# spaces → _   |   # → %23   |   - → -- (shields.io convention for literal dash)
+badge_encode() { echo "$1" | sed 's/ /_/g; s/#/%23/g; s/-/--/g'; }
+
+# ── Pull all fields from build-info.txt ──────────────────────────────────────
 source_repo="$(get_info source_repo)"
 source_ref="$(get_info source_ref)"
 source_commit="$(get_info source_commit)"
@@ -46,7 +51,6 @@ manager_tag="$(get_info manager_tag)"
 manager_version_code="$(get_info manager_version_code)"
 susfs_version="$(get_info susfs_version)"
 susfs_branch="$(get_info susfs_kernel_branch)"
-susfs_ref="$(get_info susfs_ref)"
 susfs_commit="$(get_info susfs_commit)"
 susfs_reported="$(get_info susfs_reported_version)"
 susfs_url="$(get_info susfs_url)"
@@ -55,23 +59,22 @@ image_sha="$(sha256sum "${release_dir}/Image" | awk '{print $1}')"
 zip_size="$(du -h "${release_dir}/${zip_name}" | awk '{print $1}')"
 build_date="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 build_id="${GITHUB_RUN_ID:-}"
+run_number="${GITHUB_RUN_NUMBER:-}"
 if [[ -z "${build_id}" && -n "${workflow_run}" ]]; then
   build_id="${workflow_run##*/}"
 fi
 
+# ── Display names ─────────────────────────────────────────────────────────────
 manager_display="${manager_name}"
 case "${manager_name}" in
-  none)          manager_display="No manager" ;;
+  none)          manager_display="No Manager" ;;
   kernelsu)      manager_display="KernelSU" ;;
   kernelsu-next) manager_display="KernelSU-Next" ;;
   sukisu-ultra)  manager_display="SukiSU Ultra" ;;
   resukisu)      manager_display="ReSukiSU" ;;
 esac
 
-title_suffix=""
-if [[ "${ENABLE_SUSFS}" == "true" ]]; then
-  title_suffix=" + SUSFS ${susfs_reported:-${susfs_version}}"
-fi
+susfs_display="${susfs_reported:-${susfs_version}}"
 
 manager_app_url=""
 case "${manager_name}" in
@@ -81,117 +84,200 @@ case "${manager_name}" in
   resukisu)      manager_app_url="https://github.com/ReSukiSU/ReSukiSU" ;;
 esac
 
+# ── Build shields.io badge URLs ───────────────────────────────────────────────
+
+# Manager badge
+if [[ "${manager_name}" == "none" ]]; then
+  manager_badge_url="https://img.shields.io/badge/Manager-No_Root-757575?style=for-the-badge&logo=linux&logoColor=white"
+  manager_badge_link="https://github.com/${source_repo}"
+else
+  _label="$(badge_encode "${manager_display}")"
+  _version_str="${manager_tag:-unknown}"
+  if [[ -n "${manager_version_code}" ]]; then
+    _version_str="${_version_str} #${manager_version_code}"
+  fi
+  _msg="$(badge_encode "${_version_str}")"
+  manager_badge_url="https://img.shields.io/badge/${_label}-${_msg}-4CAF50?style=for-the-badge&logo=linux&logoColor=white"
+  manager_badge_link="https://github.com/${manager_repo}"
+fi
+
+# SUSFS badge
+if [[ "${ENABLE_SUSFS}" == "true" ]]; then
+  _msg="$(badge_encode "${susfs_display}")"
+  susfs_badge_url="https://img.shields.io/badge/SUSFS-${_msg}-FF6D00?style=for-the-badge&logo=gitlab&logoColor=white"
+  susfs_badge_link="${susfs_url}"
+else
+  susfs_badge_url="https://img.shields.io/badge/SUSFS-Disabled-757575?style=for-the-badge&logo=gitlab&logoColor=white"
+  susfs_badge_link="https://gitlab.com/simonpunk/susfs4ksu"
+fi
+
+device_badge_url="https://img.shields.io/badge/Poco_F5_%2F_Note_12_Turbo-marble_%7C_marblein-EF5350?style=for-the-badge"
+build_badge_url="https://img.shields.io/badge/Build-Passing-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"
+
+# ── Write summary ─────────────────────────────────────────────────────────────
 {
-  echo "# Marble Kernel — ${manager_display}${title_suffix}"
+  # ── Centered header with badges ──────────────────────────────────────────
+  echo '<div align="center">'
   echo
-  echo "> Build Date: ${build_date}"
-  echo "> Build ID: \`${build_id:-unknown}\`"
-  echo "> Workflow: ${workflow_run}"
+  echo "# 🪨 Marble Kernel"
+  echo
+  echo "### Poco F5 · Redmi Note 12 Turbo"
+  echo
+  echo "[![Manager](${manager_badge_url})](${manager_badge_link})"
+  echo "[![SUSFS](${susfs_badge_url})](${susfs_badge_link})"
+  echo "[![Device](${device_badge_url})](https://github.com/${source_repo})"
+  echo "[![Build](${build_badge_url})](${workflow_run})"
+  echo
+  echo "<br>"
+  echo
+  echo "🕐 **${build_date}** &nbsp;·&nbsp; 🔢 **Run #${run_number:-${build_id}}** &nbsp;·&nbsp; 🔗 **[View Workflow](${workflow_run})**"
+  echo
+  echo '</div>'
   echo
   echo "---"
   echo
-  echo "## Build Configuration"
+
+  # ── Build Configuration ──────────────────────────────────────────────────
+  echo "## ⚙️ Build Configuration"
   echo
-  echo "| Component | Details |"
-  echo "|---|---|"
-  echo "| Device | Poco F5 / Redmi Note 12 Turbo (\`marble\`, \`marblein\`) |"
-  echo "| Kernel Base | \`android12-5.10\` |"
-  echo "| Build Scope | \`${BUILD_SCOPE}\` |"
-  echo "| Source | [\`${source_repo}@${source_ref}\`](https://github.com/${source_repo}/commit/${source_commit}) (\`$(short_commit "${source_commit}")\`) |"
-  echo "| Compiler | Android \`clang-r416183b\` |"
+  echo "| | |"
+  echo "|:---|:---|"
+  echo "| 📱 **Device** | Poco F5 (\`marblein\`) · Redmi Note 12 Turbo (\`marble\`) |"
+  echo "| 🧬 **Kernel Base** | \`android12-5.10\` |"
+  echo "| 🛠️ **Build Scope** | \`${BUILD_SCOPE}\` |"
+  echo "| 📦 **Source** | [\`${source_ref} @ $(short_commit "${source_commit}")\`](https://github.com/${source_repo}/commit/${source_commit}) |"
+  echo "| 🔨 **Compiler** | Android \`clang-r416183b\` |"
   echo
-  echo "## Manager"
+  echo "---"
   echo
+
+  # ── Manager ──────────────────────────────────────────────────────────────
   if [[ "${manager_name}" == "none" ]]; then
-    echo "No root manager integrated. Baseline vanilla build only."
+    echo "## 🔑 Manager — Baseline (No Root)"
+    echo
+    echo "No root manager integrated. This is a vanilla kernel build for testing and baseline comparison."
   else
-    echo "| Field | Value |"
-    echo "|---|---|"
-    echo "| Manager | ${manager_display} |"
-    echo "| Repository | [\`${manager_repo}@${manager_ref}\`](https://github.com/${manager_repo}) |"
-    echo "| Commit | [\`$(short_commit "${manager_commit}")\`](https://github.com/${manager_repo}/commit/${manager_commit}) |"
-    if [[ -n "${manager_tag}" ]]; then
-      echo "| Version Tag | \`${manager_tag}\` |"
+    echo "## 🔑 Manager — ${manager_display}"
+    echo
+    echo "| | |"
+    echo "|:---|:---|"
+    echo "| 📁 **Repository** | [\`${manager_repo} @ ${manager_ref}\`](https://github.com/${manager_repo}) |"
+    if [[ -n "${manager_tag}" && -n "${manager_version_code}" ]]; then
+      echo "| 🔖 **Version** | \`${manager_tag}\` &nbsp;·&nbsp; code \`${manager_version_code}\` |"
+    elif [[ -n "${manager_tag}" ]]; then
+      echo "| 🔖 **Version** | \`${manager_tag}\` |"
     fi
-    if [[ -n "${manager_version_code}" ]]; then
-      echo "| Version Code | \`${manager_version_code}\` |"
-    fi
+    echo "| 🔗 **Commit** | [\`$(short_commit "${manager_commit}")\`](https://github.com/${manager_repo}/commit/${manager_commit}) |"
     if [[ "${manager_name}" == "kernelsu-next" && "${ENABLE_SUSFS}" == "true" ]]; then
-      echo "| SUSFS Policy | Uses \`pershoot/KernelSU-Next@dev-susfs\` for SUSFS builds |"
+      echo "| 📌 **Note** | Non-SUSFS builds use official \`KernelSU-Next/KernelSU-Next@dev\` · SUSFS builds use \`pershoot/dev-susfs\` |"
     fi
   fi
   echo
-  echo "## SUSFS"
+  echo "---"
+  echo
+
+  # ── SUSFS ────────────────────────────────────────────────────────────────
+  echo "## 🛡️ SUSFS"
   echo
   if [[ "${ENABLE_SUSFS}" == "true" ]]; then
-    echo "| Field | Value |"
-    echo "|---|---|"
-    echo "| Version | \`${susfs_reported:-${susfs_version}}\` |"
-    echo "| Kernel Branch | \`${susfs_branch}\` |"
-    echo "| Commit | [${susfs_commit:0:7}](${susfs_url}) |"
+    echo "| | |"
+    echo "|:---|:---|"
+    echo "| 🏷️ **Version** | \`${susfs_display}\` |"
+    echo "| 🌿 **Kernel Branch** | \`${susfs_branch}\` |"
+    echo "| 🔗 **Commit** | [\`$(short_commit "${susfs_commit}")\`](${susfs_url}) |"
   else
     echo "SUSFS is not enabled for this build."
   fi
   echo
   echo "---"
   echo
-  echo "## Installation"
+
+  # ── Installation ─────────────────────────────────────────────────────────
+  echo "## 📲 Installation"
   echo
-  echo "### Prerequisites"
+  echo "<details>"
+  echo "<summary><b>📋 Prerequisites</b> — expand before flashing</summary>"
+  echo "<br>"
   echo
-  echo "- Unlocked bootloader"
-  echo "- Poco F5 (\`marblein\`) or Redmi Note 12 Turbo (\`marble\`) only"
-  echo "- Stock \`boot.img\` from the same ROM/firmware stored outside the device"
-  if [[ "${manager_name}" != "none" ]]; then
-    echo "- Matching manager app: ${manager_display}"
+  echo "- 🔓 Unlocked bootloader"
+  echo "- 📱 Poco F5 (\`marblein\`) or Redmi Note 12 Turbo (\`marble\`) **only**"
+  echo "- 💾 Stock \`boot.img\` from the **same ROM/firmware** stored safely outside the device"
+  if [[ "${manager_name}" != "none" && -n "${manager_app_url}" ]]; then
+    echo "- 📦 [${manager_display} manager app](${manager_app_url})"
   fi
   if [[ "${ENABLE_SUSFS}" == "true" ]]; then
-    echo "- [KSU SUSFS module](https://github.com/sidex15/susfs4ksu-module/releases) for \`${susfs_reported:-${susfs_version}}\`"
+    echo "- 🧩 [KSU SUSFS module](https://github.com/sidex15/susfs4ksu-module/releases) matching \`${susfs_display}\`"
   fi
   echo
-  echo "### Steps"
+  echo "</details>"
   echo
-  echo "1. Download \`${zip_name}\` and verify its SHA256 checksum."
-  echo "2. Flash the ZIP to the active slot via [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher/releases)."
-  echo "3. The installer confirms the device codename (\`marble\`/\`marblein\`) and backs up the current boot image to \`/sdcard/marble-kernel-backup/\` before flashing."
+  echo "<details>"
+  echo "<summary><b>⚡ Flash Steps</b></summary>"
+  echo "<br>"
+  echo
+  echo "1. Download \`${zip_name}\` and its \`.sha256\` file"
+  echo "2. Verify the checksum before flashing"
+  echo "3. Flash the ZIP to the active slot via **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher/releases)**"
+  echo "4. The AnyKernel3 installer will verify your device codename and **automatically back up** your current boot image to \`/sdcard/marble-kernel-backup/\` before writing"
   if [[ "${manager_name}" != "none" ]]; then
-    echo "4. Install/open the ${manager_display} manager app after boot."
+    echo "5. After boot — install / open the **${manager_display}** manager app"
   fi
   if [[ "${ENABLE_SUSFS}" == "true" ]]; then
-    echo "5. Install the KSU SUSFS module, configure hiding rules, then reboot."
+    echo "6. Install the **KSU SUSFS module**, configure hiding rules, then reboot"
   fi
   echo
-  echo "> **Bootloop recovery:** Flash the stock \`boot.img\` back to the active slot."
+  echo "</details>"
+  echo
+  echo "> [!WARNING]"
+  echo "> **Bootloop?** Flash the stock \`boot.img\` back to the active slot using Kernel Flasher or fastboot. Keep it accessible before flashing."
   echo
   echo "---"
   echo
-  echo "## Artifacts"
+
+  # ── Artifacts & Checksums ────────────────────────────────────────────────
+  echo "## 📦 Artifacts & Checksums"
   echo
-  echo "| File | Details |"
-  echo "|---|---|"
-  echo "| \`${zip_name}\` | Flashable AnyKernel3 zip, ${zip_size} |"
-  echo "| \`${zip_name}.sha256\` | SHA256 checksum |"
-  echo "| \`build-info.txt\` | Exact resolved refs and workflow metadata |"
+  echo "| File | Size | Notes |"
+  echo "|:---|:---:|:---|"
+  echo "| \`${zip_name}\` | ${zip_size} | Flashable AnyKernel3 zip |"
+  echo "| \`${zip_name}.sha256\` | — | SHA256 checksum |"
+  echo "| \`build-info.txt\` | — | Exact resolved refs + workflow metadata |"
   echo
-  echo "### Checksums"
+  echo "<details>"
+  echo "<summary><b>🔐 SHA256 Checksums</b></summary>"
+  echo "<br>"
   echo
   echo "| Artifact | SHA256 |"
-  echo "|---|---|"
-  echo "| Image | \`${image_sha}\` |"
-  echo "| ${zip_name} | \`${zip_sha}\` |"
+  echo "|:---|:---|"
+  echo "| \`Image\` | \`${image_sha}\` |"
+  echo "| \`.zip\` | \`${zip_sha}\` |"
+  echo
+  echo "</details>"
   echo
   echo "---"
   echo
-  echo "## Credits"
+
+  # ── Credits ──────────────────────────────────────────────────────────────
+  echo "## 🙏 Credits"
   echo
-  echo "- Xiaomi/Poco kernel source maintainers"
-  echo "- AnyKernel3 by osm0sis"
-  echo "- KernelSU / KernelSU-Next / SukiSU Ultra / ReSukiSU maintainers"
-  echo "- susfs4ksu by simonpunk and contributors"
+  echo "| | |"
+  echo "|:---|:---|"
+  echo "| 🧑‍💻 **Kernel Source** | Pzqqt · Xiaomi/Poco kernel maintainers |"
+  echo "| 📦 **AnyKernel3** | osm0sis |"
+  if [[ "${manager_name}" != "none" ]]; then
+    echo "| 🔑 **${manager_display}** | ${manager_display} team |"
+  fi
+  if [[ "${ENABLE_SUSFS}" == "true" ]]; then
+    echo "| 🛡️ **SUSFS** | simonpunk and contributors |"
+  fi
   echo
   echo "---"
   echo
-  echo "⚡ Built with GitHub Actions"
+  echo '<div align="center">'
+  echo
+  echo "⚡ Built with ❤️ using **GitHub Actions**"
+  echo
+  echo '</div>'
 } > "${summary}"
 
 cat "${summary}"
