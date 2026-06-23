@@ -8,6 +8,7 @@ BUILD_SCOPE="${BUILD_SCOPE:-image-only}"
 MANAGER="${MANAGER:-none}"
 ENABLE_SUSFS="${ENABLE_SUSFS:-false}"
 JOBS="${JOBS:-$(nproc)}"
+USE_CCACHE="${USE_CCACHE:-true}"
 
 pushd "${KERNEL_DIR}" >/dev/null
 mkdir -p "${OUT_DIR}" "${RELEASE_DIR}"
@@ -17,7 +18,7 @@ export SUBARCH="${ARCH}"
 export KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-marble}"
 export KBUILD_BUILD_HOST="${KBUILD_BUILD_HOST:-github-actions}"
 export CCACHE_DIR="${CCACHE_DIR:-${HOME}/.ccache}"
-export CCACHE_COMPILERCHECK=none
+export CCACHE_COMPILERCHECK=content
 export CCACHE_NOHASHDIR=true
 
 if [[ -n "${ANDROID_CLANG_BIN:-}" ]]; then
@@ -28,9 +29,9 @@ if [[ -n "${ANDROID_CLANG_BIN:-}" ]]; then
   export PATH="${ANDROID_CLANG_BIN}:${PATH}"
 fi
 
-if command -v ccache >/dev/null 2>&1; then
+if [[ "${USE_CCACHE}" == "true" ]] && command -v ccache >/dev/null 2>&1; then
   export CC="ccache clang"
-  ccache -M 10G
+  ccache -M 2G
   ccache -o compression=true
   ccache -z || true
 else
@@ -97,7 +98,7 @@ if [[ "${BUILD_SCOPE}" == "full" ]]; then
   fi
 fi
 
-if command -v ccache >/dev/null 2>&1; then
+if [[ "${USE_CCACHE}" == "true" ]] && command -v ccache >/dev/null 2>&1; then
   ccache -s | tee "${RELEASE_DIR}/ccache-stats.txt" || true
 fi
 
