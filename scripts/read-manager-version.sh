@@ -3,12 +3,14 @@ set -euo pipefail
 
 MANAGER="${MANAGER:-none}"
 KERNEL_DIR="${KERNEL_DIR:-kernel-source}"
+RESOLVED_REFS_FILE="${RESOLVED_REFS_FILE:-release/resolved-refs.env}"
 
 manager_version_code=""
+mkdir -p "$(dirname "${RESOLVED_REFS_FILE}")"
 
 if [[ "${MANAGER}" == "none" ]]; then
   echo "No manager — skipping version read"
-  echo "manager_version_code=" >> release/resolved-refs.env
+  echo "manager_version_code=" >> "${RESOLVED_REFS_FILE}"
   exit 0
 fi
 
@@ -30,19 +32,20 @@ done
 
 if [[ -z "${manager_makefile}" ]]; then
   echo "::warning::Manager Makefile not found in expected locations — version code will be empty"
-  echo "manager_version_code=" >> release/resolved-refs.env
+  echo "manager_version_code=" >> "${RESOLVED_REFS_FILE}"
   exit 0
 fi
 
-manager_version_code="$(grep -m1 '^KERNELSU_VERSION' "${manager_makefile}" | \
-  sed -E 's/KERNELSU_VERSION[[:space:]]*:?=[[:space:]]*//' | \
-  tr -d '[:space:]')"
+manager_version_code="$(
+  sed -nE 's/^[[:space:]]*(KERNELSU_VERSION|KSU_VERSION)[[:space:]]*:?=[[:space:]]*([0-9]+)[[:space:]]*$/\2/p' \
+    "${manager_makefile}" | head -n1 || true
+)"
 
 if [[ -z "${manager_version_code}" ]]; then
-  echo "::warning::KERNELSU_VERSION not found in ${manager_makefile}"
-  echo "manager_version_code=" >> release/resolved-refs.env
+  echo "::warning::Literal manager version code not found in ${manager_makefile}"
+  echo "manager_version_code=" >> "${RESOLVED_REFS_FILE}"
   exit 0
 fi
 
 echo "Manager version code: ${manager_version_code}"
-echo "manager_version_code=${manager_version_code}" >> release/resolved-refs.env
+echo "manager_version_code=${manager_version_code}" >> "${RESOLVED_REFS_FILE}"
