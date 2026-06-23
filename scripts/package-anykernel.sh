@@ -56,7 +56,12 @@ else
 fi
 
 work_dir="$(mktemp -d)"
-git clone --depth=1 "${ANYKERNEL3_REPO}" "${work_dir}/ak3"
+git init -q "${work_dir}/ak3"
+git -C "${work_dir}/ak3" remote add origin "${ANYKERNEL3_REPO}"
+git -C "${work_dir}/ak3" fetch --depth=1 origin "${ANYKERNEL3_REF}"
+git -C "${work_dir}/ak3" checkout -q --detach FETCH_HEAD
+anykernel3_commit="$(git -C "${work_dir}/ak3" rev-parse HEAD)"
+echo "anykernel3_commit=${anykernel3_commit}" >> release/resolved-refs.env
 rsync -a ak3/ "${work_dir}/ak3/"
 cp "${image_path}" "${work_dir}/ak3/Image"
 
