@@ -124,7 +124,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             bc bison build-essential ccache cpio curl flex git jq kmod libelf-dev \
-            libncurses-dev libssl-dev file python3 python-is-python3 rsync unzip zip zstd
+            libncurses-dev libssl-dev lld llvm clang file python3 python-is-python3 \
+            rsync unzip zip zstd
 
       - name: Restore Android kernel clang
         id: android-clang-cache
