@@ -20,7 +20,7 @@
 - Create `tests/test-manager-version.sh`: regression cases for manager version parsing.
 - Modify `scripts/build-kernel.sh`: safe 2 GiB ccache configuration.
 - Modify `scripts/package-anykernel.sh`: immutable AnyKernel checkout and provenance.
-- Modify `config/marble.env`: AnyKernel ref and Clang archive checksum.
+- Modify `config/marble.env`: AnyKernel ref and pinned Clang Git commit.
 - Update `README.md`, `docs/versions.md`, and Memory Bank files after remote verification.
 
 ### Task 1: Fix manager version detection with TDD
@@ -82,16 +82,17 @@ git commit -m "fix: make manager version metadata resilient"
 
 - [ ] **Step 1: Resolve immutable values**
 
-Download the official `clang-r416183b` archive once and calculate its SHA256. Confirm the reviewed AnyKernel3 commit exists upstream.
+Resolve the official `master-kernel-build-2021` branch to its Git commit and confirm the reviewed AnyKernel3 commit exists upstream. Generated Gitiles archive bytes are not suitable as the immutable identity because repeated downloads can differ.
 
 Run:
 
 ```bash
-curl -fsSL "$ANDROID_CLANG_ARCHIVE_URL" | sha256sum
+git ls-remote https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
+  refs/heads/master-kernel-build-2021
 gh api repos/osm0sis/AnyKernel3/commits/dca9dc370838d919d56c1f59ec78b27a14a72c68 --jq .sha
 ```
 
-Expected: one archive digest and the exact AnyKernel commit.
+Expected: one exact Clang Git commit and the exact AnyKernel commit.
 
 - [ ] **Step 2: Record immutable configuration**
 
@@ -99,7 +100,8 @@ Add:
 
 ```bash
 ANYKERNEL3_REF=dca9dc370838d919d56c1f59ec78b27a14a72c68
-ANDROID_CLANG_ARCHIVE_SHA256=b9dff4a2df3d11a38c8e81ae259f1a1f5df083a9a30779dc5fa8f47a5602a3ef
+ANDROID_CLANG_REF=master-kernel-build-2021
+ANDROID_CLANG_REF_COMMIT=6e3223f76384455acde43affde3df0ea9df66c0d
 ```
 
 - [ ] **Step 3: Fetch AnyKernel at the pinned commit**
@@ -154,9 +156,9 @@ Set `persist-credentials: false` for both checkouts.
 
 Run policy tests only when `run_policy_tests` is true. Measure `/` availability and remove large SDK directories only below 20 GiB. Install required packages with `--no-install-recommends`.
 
-- [ ] **Step 4: Verify the Clang archive**
+- [x] **Step 4: Verify the pinned Clang Git commit**
 
-On a toolchain cache miss, download to a temporary archive, verify with `sha256sum -c`, then extract. Include OS, architecture, version, and checksum in the toolchain cache key.
+On a toolchain cache miss, use a partial clone and sparse checkout for `clang-r416183b`, verify the requested branch resolves to commit `6e3223f76384455acde43affde3df0ea9df66c0d`, then check out that commit. Include OS, architecture, version, and commit in the toolchain cache key.
 
 - [ ] **Step 5: Resolve refs before restoring ccache**
 
@@ -176,7 +178,7 @@ Restore/save through cache v5. Cache misses are non-fatal and saves occur only a
 
 - [ ] **Step 7: Tune artifacts and metadata**
 
-Flash artifacts use `compression-level: 0` and `retention-days: 30`; debug artifacts use level 0 and 7 days. Add runner image, cache key/hit, Clang version/checksum, and AnyKernel commit to `build-info.txt`.
+Flash artifacts use `compression-level: 0` and `retention-days: 30`; debug artifacts use level 0 and 7 days. Add runner image, cache key/hit, Clang version/commit, and AnyKernel commit to `build-info.txt`.
 
 - [ ] **Step 8: Isolate release write permission**
 
@@ -299,7 +301,7 @@ Only after the replacement matrix succeeds, delete caches using the legacy `marb
 
 - [ ] **Step 2: Document versions and architecture**
 
-Record pinned action versions, AnyKernel commit, Clang checksum policy, ccache key strategy/size, artifact retention, reusable workflow design, and successful run URL.
+Record pinned action versions, AnyKernel commit, Clang Git commit policy, ccache key strategy/size, artifact retention, reusable workflow design, and successful run URL.
 
 - [ ] **Step 3: Update Memory Bank**
 

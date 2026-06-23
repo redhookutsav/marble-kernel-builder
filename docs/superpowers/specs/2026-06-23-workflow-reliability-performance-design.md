@@ -24,7 +24,7 @@ Success means:
 - Conditional disk cleanup and leaner dependency installation.
 - Artifact upload performance and retention settings.
 - Least-privilege permissions and checkout credential hardening.
-- AnyKernel3 commit pinning and Android Clang archive integrity verification.
+- AnyKernel3 commit pinning and Android Clang Git commit verification.
 - Dependabot configuration for GitHub Actions updates.
 - Performance and provenance metadata sufficient to diagnose future regressions.
 - Documentation and Memory Bank updates after verification.
@@ -61,13 +61,13 @@ Tests will cover no manager, both supported variable names, whitespace/assignmen
 
 ## Cache Design
 
-Android Clang remains a separate immutable cache keyed by runner OS/architecture, Clang version, archive identity, and cache schema version.
+Android Clang remains a separate immutable cache keyed by runner OS/architecture, Clang version, verified Git commit, and cache schema version.
 
 Ccache restoration happens after source checkout and manager/SUSFS ref resolution. Its primary identity includes:
 
 - runner OS and architecture;
 - cache schema version;
-- Android Clang version and verified archive identity;
+- Android Clang version and verified Git commit;
 - resolved kernel source commit;
 - resolved manager commit;
 - resolved SUSFS commit or `none`;
@@ -84,7 +84,7 @@ After a successful replacement build, obsolete caches from the previous key sche
 - Upgrade the official actions to the latest compatible releases researched on 2026-06-23 and pin each to its full commit SHA with a version comment: `actions/checkout` v7.0.0 (`9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`), `actions/cache` v5.0.5 (`27d5ce7f107fe9357f9df03efb73ab90386fccae`), and `actions/upload-artifact` v7.0.1 (`043fb46d1a93c77aae656e7c1c64a875d1fc6a0a`).
 - Add Dependabot weekly checks for the `github-actions` ecosystem.
 - Use Ubuntu 24.04 supported package versions with `--no-install-recommends`; do not compile newer host tools during every run.
-- Keep `clang-r416183b` because it is declared by the kernel source. Download it from the existing official archive and verify a recorded SHA256 before extraction.
+- Keep `clang-r416183b` because it is declared by the kernel source. Fetch only that directory from the official Git repository using partial clone and sparse checkout, after verifying branch `master-kernel-build-2021` resolves to commit `6e3223f76384455acde43affde3df0ea9df66c0d`.
 - Pin AnyKernel3 to a reviewed commit rather than cloning a moving default branch. Record the commit in build metadata.
 - Continue resolving moving manager refs to immutable commits before use and recording those commits in artifacts.
 
@@ -105,14 +105,14 @@ No `max-parallel` limit will be added: the three independent free hosted jobs sh
 - Pin all external actions to immutable SHAs.
 - Use `persist-credentials: false` on checkouts that do not push.
 - Default workflow permissions to `contents: read` and grant `contents: write` only to the release job.
-- Verify the compiler archive checksum before extraction.
+- Verify the compiler repository ref against the pinned Git commit before checkout.
 - Keep the existing official-manager allowlist and resolved-commit execution model.
 - Do not include hidden files in artifacts unless explicitly required.
 
 ## Error Handling
 
 - Metadata enrichment failures warn and continue when they do not affect kernel correctness.
-- Missing or invalid compiler archives, unsupported inputs, failed patches, invalid final Kconfig, missing kernel images, and invalid flashable ZIPs remain hard failures.
+- Missing or mismatched compiler commits, unsupported inputs, failed patches, invalid final Kconfig, missing kernel images, and invalid flashable ZIPs remain hard failures.
 - Cache misses never fail a build; corrupted or incompatible compiler input must fail before compilation.
 - Debug artifact upload remains enabled on failure and must retain the build log when one exists.
 

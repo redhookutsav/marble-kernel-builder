@@ -64,7 +64,7 @@ GitHub Actions checks out both repos separately, applies manager and SUSFS patch
 
 ## ⚙️ Workflows
 
-Two workflows are available:
+Two workflows are available. Both call the same reusable `build-core.yml` pipeline, so validation, caching, compilation, packaging, and release behavior stay identical:
 
 | Workflow | Use when |
 |---|---|
@@ -146,7 +146,7 @@ marble-debug-<label>-<scope>-r<run>/
 
 ## 🔒 Verified Defaults
 
-Last verified: **2026-06-22**
+Last verified: **2026-06-23**
 
 | Component | Default Ref | Pinned Commit / Version |
 |---|---|---|
@@ -158,6 +158,21 @@ Last verified: **2026-06-22**
 | SukiSU Ultra | `SukiSU-Ultra/SukiSU-Ultra@main` / `builtin` | Official |
 | ReSukiSU | `ReSukiSU/ReSukiSU@main` | Built-in SUSFS support |
 | Android kernel Clang | `clang-r416183b` | Declared by `build.config.common` |
+| Android Clang source | `master-kernel-build-2021` | `6e3223f76384455acde43affde3df0ea9df66c0d` |
+| AnyKernel3 | pinned commit | `dca9dc370838d919d56c1f59ec78b27a14a72c68` |
+
+---
+
+## CI Reliability and Performance
+
+- Official GitHub actions are pinned to immutable commits and checked weekly by Dependabot.
+- Android Clang is fetched from the official Git repository using a partial clone plus sparse checkout, then verified against its pinned commit before use.
+- Ccache is capped at 2 GiB per build identity and keyed by compiler, source, manager, SUSFS, scope, and build configuration; compiler validation uses content checks.
+- Matrix policy tests run once before fan-out. Disk cleanup runs only when available space is below 20 GiB.
+- Flash artifacts use zero recompression with 30-day retention; debug artifacts use 7-day retention.
+- Build jobs have read-only repository permission. Write permission exists only in the optional release job.
+
+Verified on **2026-06-23**: [single build run 28001500296](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/28001500296) and [three-manager matrix run 28002300749](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/28002300749) both passed. All three matrix ZIP audits and downloaded SHA-256 files matched; the warm KernelSU-Next build recorded a 99.87% hit rate for cacheable compiler calls.
 
 ---
 
