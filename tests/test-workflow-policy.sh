@@ -52,4 +52,35 @@ if grep -Fq 'CCACHE_COMPILERCHECK=none' scripts/build-kernel.sh; then
   exit 1
 fi
 
+for wrapper in .github/workflows/build-marble.yml .github/workflows/build-matrix.yml; do
+  grep -Fq 'uses: ./.github/workflows/build-core.yml' "${wrapper}" || {
+    echo "FAIL: ${wrapper} does not call the reusable build workflow" >&2
+    exit 1
+  }
+  if grep -Eq 'apt-get|actions/cache(@|/)' "${wrapper}"; then
+    echo "FAIL: ${wrapper} still duplicates core build setup" >&2
+    exit 1
+  fi
+done
+
+grep -Fq 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0' \
+  .github/workflows/build-matrix.yml || {
+  echo "FAIL: matrix setup checkout is not pinned" >&2
+  exit 1
+}
+
+grep -Fq 'for test_script in tests/test-*.sh' .github/workflows/build-matrix.yml || {
+  echo "FAIL: matrix policy tests are not run before fan-out" >&2
+  exit 1
+}
+
+[[ -f .github/dependabot.yml ]] || {
+  echo "FAIL: Dependabot configuration is missing" >&2
+  exit 1
+}
+grep -Fq 'package-ecosystem: github-actions' .github/dependabot.yml || {
+  echo "FAIL: Dependabot does not track GitHub Actions" >&2
+  exit 1
+}
+
 echo "Workflow policy tests passed"
