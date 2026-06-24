@@ -49,6 +49,12 @@ manager_ref="$(get_info manager_ref)"
 manager_commit="$(get_info manager_commit)"
 manager_tag="$(get_info manager_tag)"
 manager_version_code="$(get_info manager_version_code)"
+manager_build_version_code="$(get_info manager_build_version_code)"
+manager_build_version_name="$(get_info manager_build_version_name)"
+manager_build_tag="$(get_info manager_build_tag)"
+manager_signature_size="$(get_info manager_signature_size)"
+manager_signature_hash="$(get_info manager_signature_hash)"
+manager_supported_line="$(get_info manager_supported_line)"
 susfs_version="$(get_info susfs_version)"
 susfs_branch="$(get_info susfs_kernel_branch)"
 susfs_commit="$(get_info susfs_commit)"
@@ -92,9 +98,10 @@ if [[ "${manager_name}" == "none" ]]; then
   manager_badge_link="https://github.com/${source_repo}"
 else
   _label="$(badge_encode "${manager_display}")"
-  _version_str="${manager_tag:-unknown}"
-  if [[ -n "${manager_version_code}" ]]; then
-    _version_str="${_version_str} #${manager_version_code}"
+  _version_str="${manager_build_version_name:-${manager_build_tag:-${manager_tag:-unknown}}}"
+  _version_code="${manager_build_version_code:-${manager_version_code}}"
+  if [[ -n "${_version_code}" ]]; then
+    _version_str="${_version_str} #${_version_code}"
   fi
   _msg="$(badge_encode "${_version_str}")"
   manager_badge_url="https://img.shields.io/badge/${_label}-${_msg}-4CAF50?style=for-the-badge&logo=linux&logoColor=white"
@@ -162,12 +169,26 @@ build_badge_url="https://img.shields.io/badge/Build-Passing-2088FF?style=for-the
     echo "| | |"
     echo "|:---|:---|"
     echo "| 📁 **Repository** | [\`${manager_repo} @ ${manager_ref}\`](https://github.com/${manager_repo}) |"
-    if [[ -n "${manager_tag}" && -n "${manager_version_code}" ]]; then
-      echo "| 🔖 **Version** | \`${manager_tag}\` &nbsp;·&nbsp; code \`${manager_version_code}\` |"
-    elif [[ -n "${manager_tag}" ]]; then
-      echo "| 🔖 **Version** | \`${manager_tag}\` |"
+    if [[ -n "${manager_build_version_name}" ]]; then
+      echo "| 🏷️ **Version Name** | \`${manager_build_version_name}\` |"
+    fi
+    if [[ -n "${manager_build_tag:-${manager_tag}}" && -n "${manager_build_version_code:-${manager_version_code}}" ]]; then
+      echo "| 🔖 **Version** | \`${manager_build_tag:-${manager_tag}}\` &nbsp;·&nbsp; code \`${manager_build_version_code:-${manager_version_code}}\` |"
+    elif [[ -n "${manager_build_tag:-${manager_tag}}" ]]; then
+      echo "| 🔖 **Version** | \`${manager_build_tag:-${manager_tag}}\` |"
+    elif [[ -n "${manager_build_version_code:-${manager_version_code}}" ]]; then
+      echo "| 🔢 **Version Code** | \`${manager_build_version_code:-${manager_version_code}}\` |"
     fi
     echo "| 🔗 **Commit** | [\`$(short_commit "${manager_commit}")\`](https://github.com/${manager_repo}/commit/${manager_commit}) |"
+    if [[ -n "${manager_signature_size}" ]]; then
+      echo "| ✍️ **Signature Size** | \`${manager_signature_size}\` |"
+    fi
+    if [[ -n "${manager_signature_hash}" ]]; then
+      echo "| 🧾 **Signature Hash** | \`${manager_signature_hash}\` |"
+    fi
+    if [[ -n "${manager_supported_line}" ]]; then
+      echo "| 🤝 **Supported Managers** | ${manager_supported_line} |"
+    fi
     if [[ "${manager_name}" == "kernelsu-next" && "${ENABLE_SUSFS}" == "true" ]]; then
       echo "| 📌 **Note** | Non-SUSFS builds use official \`KernelSU-Next/KernelSU-Next@dev\` · SUSFS builds use \`pershoot/dev-susfs\` |"
     fi

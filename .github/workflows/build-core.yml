@@ -52,6 +52,10 @@ on:
         required: false
         type: boolean
         default: false
+      publish_step_summary:
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -209,6 +213,9 @@ jobs:
       - name: Build kernel
         run: bash scripts/build-kernel.sh
 
+      - name: Read manager build metadata
+        run: bash scripts/read-manager-build-metadata.sh
+
       - name: Package AnyKernel3 zip
         run: bash scripts/package-anykernel.sh
 
@@ -236,7 +243,9 @@ jobs:
       - name: Generate build summary
         run: |
           bash scripts/generate-build-summary.sh
-          cat kernel-source/release/summary.md >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ inputs.publish_step_summary }}" == "true" ]]; then
+            cat kernel-source/release/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Set artifact name
         id: artifact-name

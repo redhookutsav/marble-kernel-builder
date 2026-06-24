@@ -100,3 +100,4 @@ jobs:
       make_release: ${{ inputs.make_release }}
       artifact_label: ${{ inputs.manager }}${{ inputs.enable_susfs && '-susfs' || '' }}
       run_policy_tests: true
+      publish_step_summary: true

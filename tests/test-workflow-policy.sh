@@ -30,6 +30,8 @@ required_core_patterns=(
   'marble-builder-ccache-v2-'
   'runner_image_version='
   'ccache_hit='
+  'publish_step_summary'
+  'Read manager build metadata'
 )
 
 for pattern in "${required_core_patterns[@]}"; do
@@ -73,6 +75,21 @@ grep -Fq 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0' \
 
 grep -Fq 'for test_script in tests/test-*.sh' .github/workflows/build-matrix.yml || {
   echo "FAIL: matrix policy tests are not run before fan-out" >&2
+  exit 1
+}
+
+grep -Fq 'publish_step_summary: false' .github/workflows/build-matrix.yml || {
+  echo "FAIL: matrix child jobs should not publish separate job summaries" >&2
+  exit 1
+}
+
+grep -Fq 'Generate combined matrix summary' .github/workflows/build-matrix.yml || {
+  echo "FAIL: matrix workflow does not generate a combined summary" >&2
+  exit 1
+}
+
+grep -Fq 'pattern: marble-*-r${{ github.run_number }}' .github/workflows/build-matrix.yml || {
+  echo "FAIL: matrix workflow does not download all matrix flash artifacts by pattern" >&2
   exit 1
 }
 
