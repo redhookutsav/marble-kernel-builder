@@ -1,5 +1,7 @@
 # Workflow Reliability and Performance Design
 
+> Historical note: this design is superseded by the 2026-06-24 CI hardening pass. Debug artifacts were removed, build metadata now includes `build-info.json`, release creation moved to `release-core.yml`, and build ZIPs receive GitHub artifact attestations.
+
 ## Goal
 
 Make both Marble kernel workflows reliable, maintainable, secure, and faster on free GitHub-hosted runners while preserving the currently boot-tested kernel, manager, and SUSFS behavior.

@@ -66,6 +66,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.enable_susfs }}-${{ inputs.build_scope }}
+  cancel-in-progress: false
+
 jobs:
   setup:
     name: Generate matrix and validate policy
@@ -90,45 +94,15 @@ jobs:
 
       - name: Generate build matrix
         id: gen
+        env:
+          BUILD_NONE: ${{ inputs.build_none }}
+          BUILD_KERNELSU: ${{ inputs.build_kernelsu }}
+          BUILD_KERNELSU_NEXT: ${{ inputs.build_kernelsu_next }}
+          BUILD_SUKISU_ULTRA: ${{ inputs.build_sukisu_ultra }}
+          BUILD_RESUKISU: ${{ inputs.build_resukisu }}
+          ENABLE_SUSFS: ${{ inputs.enable_susfs }}
         run: |
-          include=()
-
-          if [[ "${{ inputs.build_none }}" == "true" ]]; then
-            include+=('{"manager":"none","enable_susfs":"false","label":"none"}')
-          fi
-          if [[ "${{ inputs.build_kernelsu }}" == "true" ]]; then
-            include+=('{"manager":"kernelsu","enable_susfs":"false","label":"kernelsu"}')
-          fi
-          if [[ "${{ inputs.build_kernelsu_next }}" == "true" ]]; then
-            if [[ "${{ inputs.enable_susfs }}" == "true" ]]; then
-              include+=('{"manager":"kernelsu-next","enable_susfs":"true","label":"kernelsu-next-susfs"}')
-            else
-              include+=('{"manager":"kernelsu-next","enable_susfs":"false","label":"kernelsu-next"}')
-            fi
-          fi
-          if [[ "${{ inputs.build_sukisu_ultra }}" == "true" ]]; then
-            if [[ "${{ inputs.enable_susfs }}" == "true" ]]; then
-              include+=('{"manager":"sukisu-ultra","enable_susfs":"true","label":"sukisu-ultra-susfs"}')
-            else
-              include+=('{"manager":"sukisu-ultra","enable_susfs":"false","label":"sukisu-ultra"}')
-            fi
-          fi
-          if [[ "${{ inputs.build_resukisu }}" == "true" ]]; then
-            if [[ "${{ inputs.enable_susfs }}" == "true" ]]; then
-              include+=('{"manager":"resukisu","enable_susfs":"true","label":"resukisu-susfs"}')
-            else
-              include+=('{"manager":"resukisu","enable_susfs":"false","label":"resukisu"}')
-            fi
-          fi
-
-          if [[ ${#include[@]} -eq 0 ]]; then
-            echo "::error::No managers selected. Enable at least one build_* checkbox."
-            exit 1
-          fi
-
-          joined="$(printf '%s,' "${include[@]}")"
-          matrix="{\"include\":[${joined%,}]}"
-          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+          matrix="$(bash scripts/generate-build-matrix.sh)"
           echo "Generated matrix: ${matrix}"
 
   build:
@@ -138,7 +112,9 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     permissions:
-      contents: write
+      contents: read
+      id-token: write
+      attestations: write
     uses: ./.github/workflows/build-core.yml
     with:
       source_repo: ${{ inputs.source_repo }}
@@ -152,10 +128,25 @@ jobs:
       susfs_expected_version: ""
       build_scope: ${{ inputs.build_scope }}
       enable_ccache: ${{ inputs.enable_ccache }}
-      make_release: ${{ inputs.make_release }}
       artifact_label: ${{ matrix.label }}
       run_policy_tests: false
       publish_step_summary: false
+
+  release:
+    name: release-${{ matrix.label }}
+    needs:
+      - setup
+      - build
+    if: ${{ inputs.make_release }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-core.yml
+    with:
+      flash_artifact_name: marble-flash-${{ matrix.label }}-${{ inputs.build_scope }}-r${{ github.run_number }}
+      artifact_label: ${{ matrix.label }}
 
   aggregate-summary:
     name: Generate combined matrix summary

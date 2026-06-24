@@ -2,6 +2,7 @@
 set -euo pipefail
 
 source config/marble.env
+source scripts/lib/summary-common.sh
 
 KERNEL_DIR="${KERNEL_DIR:-kernel-source}"
 MANAGER="${MANAGER:-none}"
@@ -22,21 +23,8 @@ source "${zip_env}"
 
 get_info() {
   local key="$1"
-  grep -m1 "^${key}=" "${build_info}" | cut -d= -f2- || true
+  summary_get_info "${build_info}" "${key}"
 }
-
-short_commit() {
-  local value="$1"
-  if [[ -z "${value}" || "${value}" == "unknown" ]]; then
-    echo "unknown"
-  else
-    echo "${value:0:7}"
-  fi
-}
-
-# Encode a string for use in shields.io badge path segments.
-# spaces → _   |   # → %23   |   - → -- (shields.io convention for literal dash)
-badge_encode() { echo "$1" | sed 's/ /_/g; s/#/%23/g; s/-/--/g'; }
 
 # ── Pull all fields from build-info.txt ──────────────────────────────────────
 source_repo="$(get_info source_repo)"
@@ -71,24 +59,11 @@ if [[ -z "${build_id}" && -n "${workflow_run}" ]]; then
 fi
 
 # ── Display names ─────────────────────────────────────────────────────────────
-manager_display="${manager_name}"
-case "${manager_name}" in
-  none)          manager_display="No Manager" ;;
-  kernelsu)      manager_display="KernelSU" ;;
-  kernelsu-next) manager_display="KernelSU-Next" ;;
-  sukisu-ultra)  manager_display="SukiSU Ultra" ;;
-  resukisu)      manager_display="ReSukiSU" ;;
-esac
+manager_display="$(manager_display "${manager_name}")"
 
 susfs_display="${susfs_reported:-${susfs_version}}"
 
-manager_app_url=""
-case "${manager_name}" in
-  kernelsu)      manager_app_url="https://github.com/tiann/KernelSU/releases" ;;
-  kernelsu-next) manager_app_url="https://github.com/KernelSU-Next/KernelSU-Next/releases" ;;
-  sukisu-ultra)  manager_app_url="https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases" ;;
-  resukisu)      manager_app_url="https://github.com/ReSukiSU/ReSukiSU" ;;
-esac
+manager_app_url="$(manager_app_url "${manager_name}")"
 
 # ── Build shields.io badge URLs ───────────────────────────────────────────────
 

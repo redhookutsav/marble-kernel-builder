@@ -74,10 +74,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.manager }}-${{ inputs.enable_susfs }}-${{ inputs.build_scope }}
+  cancel-in-progress: false
+
 jobs:
   build:
     permissions:
-      contents: write
+      contents: read
+      id-token: write
+      attestations: write
     uses: ./.github/workflows/build-core.yml
     with:
       source_repo: ${{ inputs.source_repo }}
@@ -91,7 +97,16 @@ jobs:
       susfs_expected_version: ${{ inputs.susfs_expected_version }}
       build_scope: ${{ inputs.build_scope }}
       enable_ccache: ${{ inputs.enable_ccache }}
-      make_release: ${{ inputs.make_release }}
       artifact_label: ${{ inputs.manager }}${{ inputs.enable_susfs && '-susfs' || '' }}
       run_policy_tests: true
       publish_step_summary: true
+
+  release:
+    needs: build
+    if: ${{ inputs.make_release }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-core.yml
+    with:
+      flash_artifact_name: ${{ needs.build.outputs.flash_artifact_name }}
+      artifact_label: ${{ inputs.manager }}${{ inputs.enable_susfs && '-susfs' || '' }}

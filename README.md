@@ -64,12 +64,13 @@ GitHub Actions checks out both repos separately, applies manager and SUSFS patch
 
 ## ⚙️ Workflows
 
-Two workflows are available. Both call the same reusable `build-core.yml` pipeline, so validation, caching, compilation, packaging, and release behavior stay identical:
+Three workflows are available. Single and matrix builds call the same reusable `build-core.yml` pipeline, so validation, caching, compilation, packaging, and artifact behavior stay identical:
 
 | Workflow | Use when |
 |---|---|
 | **Build Marble Kernel** (`build-marble.yml`) | Single manager build — full control over all inputs and custom refs |
 | **Build Marble Kernel (Matrix)** (`build-matrix.yml`) | Multi-manager release run — select multiple managers via checkboxes, all build in parallel with separate artifacts |
+| **Marble Builder Preflight** (`preflight.yml`) | Cheap static checks for workflows, shell scripts, policy tests, actionlint, and shellcheck |
 
 ### `build-marble.yml` Inputs
 
@@ -113,6 +114,7 @@ marble-flash-<label>-<scope>-r<run>/
 ├─ Marble_<Manager>-<version>_<SUSFS>_<date>_r<run>.zip
 ├─ Marble_<Manager>-<version>_<SUSFS>_<date>_r<run>.zip.sha256
 ├─ build-info.txt      ← exact resolved refs and workflow metadata
+├─ build-info.json     ← structured metadata for tooling and future summaries
 ├─ summary.md          ← build summary (also used for release notes)
 ├─ zip-audit.txt       ← structure audit results
 └─ ccache-stats.txt
@@ -155,7 +157,9 @@ Last verified: **2026-06-23**
 - Ccache is capped at 2 GiB per build identity and keyed by compiler, source, manager, SUSFS, scope, and build configuration; compiler validation uses content checks.
 - Matrix policy tests run once before fan-out. Disk cleanup runs only when available space is below 20 GiB.
 - Flash artifacts use zero recompression with 30-day retention.
-- Build jobs have read-only repository permission. Write permission exists only in the optional release job.
+- Build jobs have read-only repository permission for contents. Artifact provenance attestations use GitHub's OIDC-backed attestation permission on the final ZIP.
+- Release creation is isolated in `release-core.yml`; write permission exists only in the optional release job.
+- Duplicate manual dispatches are guarded with workflow concurrency groups to avoid piling up accidental repeated runs.
 
 Verified on **2026-06-23**: [single build run 28001500296](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/28001500296) and [three-manager matrix run 28002300749](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/28002300749) both passed. All three matrix ZIP audits and downloaded SHA-256 files matched; the warm KernelSU-Next build recorded a 99.87% hit rate for cacheable compiler calls.
 
