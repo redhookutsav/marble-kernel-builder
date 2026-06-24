@@ -13,9 +13,15 @@ if [[ ! -d "${MATRIX_ARTIFACTS_DIR}" ]]; then
   exit 1
 fi
 
-mapfile -t artifact_dirs < <(
+artifact_dirs=()
+if [[ -f "${MATRIX_ARTIFACTS_DIR}/build-info.txt" && -f "${MATRIX_ARTIFACTS_DIR}/zip-name.env" ]]; then
+  artifact_dirs+=("${MATRIX_ARTIFACTS_DIR}")
+fi
+
+mapfile -t nested_artifact_dirs < <(
   find "${MATRIX_ARTIFACTS_DIR}" -mindepth 1 -maxdepth 1 -type d | sort
 )
+artifact_dirs+=("${nested_artifact_dirs[@]}")
 
 valid_dirs=()
 for artifact_dir in "${artifact_dirs[@]}"; do
