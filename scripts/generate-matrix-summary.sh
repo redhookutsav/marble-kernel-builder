@@ -63,6 +63,28 @@ manager_version_label() {
   fi
 }
 
+manager_version_only() {
+  local build_info="$1"
+  local tag build_tag build_name commit
+  tag="$(get_info "${build_info}" manager_tag)"
+  build_tag="$(get_info "${build_info}" manager_build_tag)"
+  build_name="$(get_info "${build_info}" manager_build_version_name)"
+  commit="$(get_info "${build_info}" manager_commit)"
+  local version="${build_name:-${build_tag:-${tag:-}}}"
+  if [[ -z "${version}" && -n "${commit}" ]]; then
+    version="$(short_commit "${commit}")"
+  fi
+  echo "${version:-unknown}"
+}
+
+manager_code_only() {
+  local build_info="$1"
+  local build_code static_code
+  build_code="$(get_info "${build_info}" manager_build_version_code)"
+  static_code="$(get_info "${build_info}" manager_version_code)"
+  echo "${build_code:-${static_code:-—}}"
+}
+
 first_info="${artifact_dirs[0]}/build-info.txt"
 if [[ ! -f "${first_info}" ]]; then
   echo "::error::Missing build-info.txt in ${artifact_dirs[0]}"
@@ -85,51 +107,107 @@ run_number="${SOURCE_RUN_NUMBER:-${GITHUB_RUN_NUMBER:-}}"
 susfs_display="${susfs_reported:-${susfs_version}}"
 
 manager_count="${#artifact_dirs[@]}"
-manager_badge_url="https://img.shields.io/badge/Managers-${manager_count}_builds-4CAF50?style=for-the-badge&logo=linux&logoColor=white"
-susfs_badge_url="https://img.shields.io/badge/SUSFS-$(badge_encode "${susfs_display:-Mixed}")-FF6D00?style=for-the-badge&logo=gitlab&logoColor=white"
-device_badge_url="https://img.shields.io/badge/Poco_F5_%2F_Note_12_Turbo-marble_%7C_marblein-EF5350?style=for-the-badge"
-build_badge_url="https://img.shields.io/badge/Matrix-Passing-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"
+builder_repo="${GITHUB_REPOSITORY:-mohdakil2426/marble-kernel-builder}"
+banner_ref="${GITHUB_SHA:-main}"
+banner_url="https://raw.githubusercontent.com/${builder_repo}/${banner_ref}/docs/assets/marble-banner.svg"
+
+manager_badge_url="https://img.shields.io/badge/Matrix-${manager_count}_managers_passed-4CAF50?logo=githubactions&logoColor=white"
+if [[ -n "${susfs_display}" ]]; then
+  susfs_badge_url="https://img.shields.io/badge/SUSFS-$(badge_encode "${susfs_display}")-FF6D00?logo=gitlab&logoColor=white"
+else
+  susfs_badge_url="https://img.shields.io/badge/SUSFS-Disabled-757575?logo=gitlab&logoColor=white"
+fi
+device_badge_url="https://img.shields.io/badge/Device-Poco_F5_%2F_RN12_Turbo-EF5350"
+scope_badge_url="https://img.shields.io/badge/Scope-$(badge_encode "${BUILD_SCOPE}")-2088FF"
 
 {
   echo '<div align="center">'
   echo
-  echo "# 🪨 Marble Kernel Matrix"
+  echo "<img src=\"${banner_url}\" alt=\"Marble Kernel\" width=\"720\" />"
   echo
-  echo "### Poco F5 · Redmi Note 12 Turbo"
+  echo "<br/>"
   echo
-  echo "[![Managers](${manager_badge_url})](${workflow_run})"
+  echo "# Marble Kernel · Matrix Build"
+  echo
+  echo "**Combined summary for a successful multi-manager CI run**"
+  echo
+  echo "\`marble\` · \`marblein\` · \`${BUILD_SCOPE}\`"
+  echo
+  echo "<br/>"
+  echo
+  echo "[![Matrix](${manager_badge_url})](${workflow_run})"
   echo "[![SUSFS](${susfs_badge_url})](${susfs_url:-https://gitlab.com/simonpunk/susfs4ksu})"
   echo "[![Device](${device_badge_url})](https://github.com/${source_repo})"
-  echo "[![Build](${build_badge_url})](${workflow_run})"
+  echo "[![Scope](${scope_badge_url})](${workflow_run})"
   echo
-  echo "<br>"
+  echo "<br/>"
   echo
-  echo "🕐 **${build_date}** &nbsp;·&nbsp; 🔢 **Run #${run_number:-unknown}** &nbsp;·&nbsp; 🔗 **[View Workflow](${workflow_run})**"
+  echo "🕐 **${build_date}** &nbsp;·&nbsp; 🔢 **Run #${run_number:-unknown}** &nbsp;·&nbsp; 🔗 **[View workflow](${workflow_run})**"
   echo
   echo '</div>'
   echo
   echo "---"
   echo
-
-  echo "## ⚙️ Matrix Configuration"
+  echo "## ⚠️ Before you flash"
+  echo
+  echo "> Custom kernels can bootloop or cause data loss. Artifacts are provided **as-is**."
+  echo ">"
+  echo "> - 💾 Back up \`boot.img\` from the **same** ROM / firmware"
+  echo "> - 🔓 Unlocked bootloader required"
+  echo "> - 📱 **Poco F5** (\`marblein\`) or **Redmi Note 12 Turbo** (\`marble\`) only"
+  echo "> - 🧩 Match **device + ROM** to the build you flash"
+  echo "> - ✅ Verify **SHA-256** before flashing"
+  echo
+  echo '<div align="center">'
+  echo
+  echo "### 🚨 Proceed at your own risk"
+  echo
+  echo '</div>'
+  echo
+  echo "---"
+  echo
+  echo "## ⚙️ Matrix configuration"
   echo
   echo "| | |"
   echo "|:---|:---|"
   echo "| 📱 **Device** | Poco F5 (\`marblein\`) · Redmi Note 12 Turbo (\`marble\`) |"
-  echo "| 🟠 **ROM Support** | **Official Xiaomi stock ${SUPPORTED_ROM_LABEL} only** |"
-  echo "| 🧬 **Kernel Base** | \`android12-5.10\` |"
-  echo "| 🛠️ **Build Scope** | \`${BUILD_SCOPE}\` |"
+  echo "| 🧬 **Kernel base** | \`android12-5.10\` |"
+  echo "| 🛠️ **Build scope** | \`${BUILD_SCOPE}\` |"
   echo "| 📦 **Source** | [\`${source_ref} @ $(short_commit "${source_commit}")\`](https://github.com/${source_repo}/commit/${source_commit}) |"
   echo "| 🔨 **Compiler** | \`${android_clang_version:-clang-r416183b}\` |"
   if [[ -n "${android_clang_commit}" ]]; then
-    echo "| 🧷 **Compiler Commit** | \`$(short_commit "${android_clang_commit}")\` |"
+    echo "| 🧷 **Compiler commit** | \`$(short_commit "${android_clang_commit}")\` |"
   fi
+  if [[ -n "${susfs_display}" ]]; then
+    echo "| 🛡️ **SUSFS** | \`${susfs_display}\` · \`${susfs_branch}\` · [\`$(short_commit "${susfs_commit}")\`](${susfs_url}) |"
+  else
+    echo "| 🛡️ **SUSFS** | Disabled |"
+  fi
+  echo "| ✅ **Result** | **${manager_count} / ${manager_count}** manager builds passed |"
   echo
   echo "---"
   echo
-
   echo "## 🔑 Managers"
   echo
+  echo "| Manager | Version | Code | SUSFS | Status |"
+  echo "|:---|:---|:---:|:---:|:---:|"
+  for artifact_dir in "${artifact_dirs[@]}"; do
+    build_info="${artifact_dir}/build-info.txt"
+    [[ -f "${build_info}" ]] || continue
+    manager_name="$(get_info "${build_info}" manager)"
+    display="$(manager_display "${manager_name}")"
+    version_cell="$(manager_version_only "${build_info}")"
+    code_cell="$(manager_code_only "${build_info}")"
+    enable_susfs="$(get_info "${build_info}" enable_susfs)"
+    if [[ "${enable_susfs}" == "true" ]]; then
+      susfs_cell="✅"
+    else
+      susfs_cell="—"
+    fi
+    echo "| **${display}** | \`${version_cell}\` | \`${code_cell}\` | ${susfs_cell} | ✅ Passed |"
+  done
+  echo
+
   for artifact_dir in "${artifact_dirs[@]}"; do
     build_info="${artifact_dir}/build-info.txt"
     zip_env="${artifact_dir}/zip-name.env"
@@ -151,35 +229,44 @@ build_badge_url="https://img.shields.io/badge/Matrix-Passing-2088FF?style=for-th
     sig_size="$(get_info "${build_info}" manager_signature_size)"
     sig_hash="$(get_info "${build_info}" manager_signature_hash)"
     supported_line="$(get_info "${build_info}" manager_supported_line)"
+    app_url="$(manager_app_url "${manager_name}")"
 
-    echo "<details open>"
+    echo "<details>"
     echo "<summary><b>${display}</b> — ${version_label} · ✅ Passed</summary>"
-    echo "<br>"
+    echo
+    echo "<br/>"
     echo
     echo "| | |"
     echo "|:---|:---|"
-    echo "| 📁 **Repository** | [\`${manager_repo} @ ${manager_ref}\`](https://github.com/${manager_repo}) |"
+    if [[ -n "${manager_repo}" ]]; then
+      echo "| 📁 **Repository** | [\`${manager_repo} @ ${manager_ref}\`](https://github.com/${manager_repo}) |"
+    fi
     if [[ -n "${build_name}" ]]; then
-      echo "| 🏷️ **Version Name** | \`${build_name}\` |"
+      echo "| 🏷️ **Version name** | \`${build_name}\` |"
     fi
     if [[ -n "${build_tag:-${tag}}" ]]; then
       echo "| 🔖 **Version** | \`${build_tag:-${tag}}\` |"
     fi
     if [[ -n "${build_code:-${static_code}}" ]]; then
-      echo "| 🔢 **Version Code** | \`${build_code:-${static_code}}\` |"
+      echo "| 🔢 **Version code** | \`${build_code:-${static_code}}\` |"
     fi
-    echo "| 🔗 **Commit** | [\`$(short_commit "${manager_commit}")\`](https://github.com/${manager_repo}/commit/${manager_commit}) |"
+    if [[ -n "${manager_repo}" && -n "${manager_commit}" ]]; then
+      echo "| 🔗 **Commit** | [\`$(short_commit "${manager_commit}")\`](https://github.com/${manager_repo}/commit/${manager_commit}) |"
+    fi
     if [[ -n "${sig_size}" ]]; then
-      echo "| ✍️ **Signature Size** | \`${sig_size}\` |"
+      echo "| ✍️ **Signature size** | \`${sig_size}\` |"
     fi
     if [[ -n "${sig_hash}" ]]; then
-      echo "| 🧾 **Signature Hash** | \`${sig_hash}\` |"
+      echo "| 🧾 **Signature hash** | \`${sig_hash}\` |"
     fi
     if [[ -n "${supported_line}" ]]; then
-      echo "| 🤝 **Supported Managers** | ${supported_line//,/, } |"
+      echo "| 🤝 **Supported managers** | ${supported_line//,/, } |"
     fi
     if [[ "${manager_name}" == "kernelsu-next" && "$(get_info "${build_info}" enable_susfs)" == "true" ]]; then
       echo "| 📌 **Note** | Non-SUSFS builds use official \`KernelSU-Next/KernelSU-Next@dev\` · SUSFS builds use \`pershoot/dev-susfs\` |"
+    fi
+    if [[ -n "${app_url}" ]]; then
+      echo "| 📦 **App** | [Manager releases](${app_url}) |"
     fi
     echo
     echo "</details>"
@@ -194,8 +281,11 @@ build_badge_url="https://img.shields.io/badge/Matrix-Passing-2088FF?style=for-th
     echo "| | |"
     echo "|:---|:---|"
     echo "| 🏷️ **Version** | \`${susfs_display}\` |"
-    echo "| 🌿 **Kernel Branch** | \`${susfs_branch}\` |"
+    echo "| 🌿 **Kernel branch** | \`${susfs_branch}\` |"
     echo "| 🔗 **Commit** | [\`$(short_commit "${susfs_commit}")\`](${susfs_url}) |"
+    echo "| 📦 **Userspace module** | [sidex15/susfs4ksu-module](https://github.com/sidex15/susfs4ksu-module/releases) |"
+    echo
+    echo "> After boot: install the SUSFS module matching this version, configure hiding rules, then reboot."
   else
     echo "SUSFS is not enabled for this matrix."
   fi
@@ -203,55 +293,9 @@ build_badge_url="https://img.shields.io/badge/Matrix-Passing-2088FF?style=for-th
   echo "---"
   echo
 
-  echo "## 📲 Installation"
+  echo "## 📦 Artifacts & checksums"
   echo
-  echo "<details>"
-  echo "<summary><b>📋 Prerequisites</b> — expand before flashing</summary>"
-  echo "<br>"
-  echo
-  echo "- 🔓 Unlocked bootloader"
-  echo "- 📱 Poco F5 (\`marblein\`) or Redmi Note 12 Turbo (\`marble\`) **only**"
-  echo "- 🟠 **Official Xiaomi stock ${SUPPORTED_ROM_LABEL} only** — MIUI, AOSP, and custom ROMs are unsupported"
-  echo "- 💾 Stock \`boot.img\` from the **same ROM/firmware** stored safely outside the device"
-  for artifact_dir in "${artifact_dirs[@]}"; do
-    build_info="${artifact_dir}/build-info.txt"
-    manager_name="$(get_info "${build_info}" manager)"
-    display="$(manager_display "${manager_name}")"
-    app_url="$(manager_app_url "${manager_name}")"
-    if [[ "${manager_name}" != "none" && -n "${app_url}" ]]; then
-      echo "- 📦 [${display} manager app](${app_url}) for the ${display} ZIP"
-    fi
-  done
-  if [[ -n "${susfs_display}" ]]; then
-    echo "- 🧩 [KSU SUSFS module](https://github.com/sidex15/susfs4ksu-module/releases) matching \`${susfs_display}\`"
-  fi
-  echo
-  echo "</details>"
-  echo
-  echo "<details>"
-  echo "<summary><b>⚡ Flash Steps</b></summary>"
-  echo "<br>"
-  echo
-  echo "1. Download the ZIP for the manager you want"
-  echo "2. Verify it against the SHA256 shown in this summary before flashing"
-  echo "3. Flash the ZIP to the active slot via **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher/releases)**"
-  echo "4. The AnyKernel3 installer will verify your device codename and **automatically back up** your current boot image to \`/sdcard/marble-kernel-backup/\` before writing"
-  echo "5. After boot — install / open the matching manager app"
-  if [[ -n "${susfs_display}" ]]; then
-    echo "6. Install the **KSU SUSFS module**, configure hiding rules, then reboot"
-  fi
-  echo
-  echo "</details>"
-  echo
-  echo "> [!WARNING]"
-  echo "> **Bootloop?** Flash the stock \`boot.img\` back to the active slot using Kernel Flasher or fastboot. Keep it accessible before flashing."
-  echo
-  echo "---"
-  echo
-
-  echo "## 📦 Artifacts & Checksums"
-  echo
-  echo "| Manager | File | Size | SHA256 |"
+  echo "| Manager | File | Size | SHA-256 |"
   echo "|:---|:---|:---:|:---|"
   for artifact_dir in "${artifact_dirs[@]}"; do
     build_info="${artifact_dir}/build-info.txt"
@@ -275,11 +319,59 @@ build_badge_url="https://img.shields.io/badge/Matrix-Passing-2088FF?style=for-th
   echo "---"
   echo
 
+  echo "## 📲 Installation"
+  echo
+  echo "<details>"
+  echo "<summary><b>Prerequisites</b></summary>"
+  echo
+  echo "<br/>"
+  echo
+  echo "- 🔓 Unlocked bootloader"
+  echo "- 📱 Poco F5 (\`marblein\`) or Redmi Note 12 Turbo (\`marble\`) only"
+  echo "- 🧩 Kernel build that matches your **device + ROM**"
+  echo "- 💾 Original \`boot.img\` from the same ROM/firmware stored **off-device**"
+  for artifact_dir in "${artifact_dirs[@]}"; do
+    build_info="${artifact_dir}/build-info.txt"
+    manager_name="$(get_info "${build_info}" manager)"
+    display="$(manager_display "${manager_name}")"
+    app_url="$(manager_app_url "${manager_name}")"
+    if [[ "${manager_name}" != "none" && -n "${app_url}" ]]; then
+      echo "- 📦 [${display} manager app](${app_url}) for the ${display} ZIP"
+    fi
+  done
+  if [[ -n "${susfs_display}" ]]; then
+    echo "- 🛡️ [KSU SUSFS module](https://github.com/sidex15/susfs4ksu-module/releases) matching \`${susfs_display}\`"
+  fi
+  echo
+  echo "</details>"
+  echo
+  echo "<details>"
+  echo "<summary><b>Flash steps</b> (Kernel Flasher recommended)</summary>"
+  echo
+  echo "<br/>"
+  echo
+  echo "1. Download the ZIP for **one** manager"
+  echo "2. Verify **SHA-256** against the table above"
+  echo "3. Flash to the **active slot** with [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher/releases)"
+  echo "4. AnyKernel3 will verify codename (\`marble\` / \`marblein\`) and **auto-back up** boot to \`/sdcard/marble-kernel-backup/\`"
+  echo "5. Reboot · install / open the matching manager app"
+  if [[ -n "${susfs_display}" ]]; then
+    echo "6. If SUSFS is enabled: install the SUSFS module, configure rules, reboot"
+  fi
+  echo
+  echo "</details>"
+  echo
+  echo "> [!WARNING]"
+  echo "> **Bootloop?** Flash the original \`boot.img\` from the same ROM/firmware back to the active slot (Kernel Flasher or fastboot). Keep that backup accessible **before** you flash."
+  echo
+  echo "---"
+  echo
+
   echo "## 🙏 Credits"
   echo
   echo "| | |"
   echo "|:---|:---|"
-  echo "| 🧑‍💻 **Kernel Source** | Pzqqt · Xiaomi/Poco kernel maintainers |"
+  echo "| 🧑‍💻 **Kernel source** | Pzqqt · Xiaomi / device maintainers |"
   echo "| 📦 **AnyKernel3** | osm0sis |"
   seen_managers=""
   for artifact_dir in "${artifact_dirs[@]}"; do
@@ -301,7 +393,11 @@ build_badge_url="https://img.shields.io/badge/Matrix-Passing-2088FF?style=for-th
   echo
   echo '<div align="center">'
   echo
-  echo "⚡ Built with ❤️ using **GitHub Actions**"
+  echo "**⚡ Built with GitHub Actions · for Marble**"
+  echo
+  echo "<br/>"
+  echo
+  echo "\`marble\` · \`marblein\` · KernelSU family · SUSFS"
   echo
   echo '</div>'
 } > "${MATRIX_SUMMARY}"

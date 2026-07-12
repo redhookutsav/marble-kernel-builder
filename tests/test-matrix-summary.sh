@@ -78,24 +78,35 @@ MATRIX_ARTIFACTS_DIR="${tmp_dir}" MATRIX_SUMMARY="${tmp_dir}/matrix-summary.md" 
 summary="${tmp_dir}/matrix-summary.md"
 
 required_patterns=(
-  '^# 🪨 Marble Kernel Matrix$'
-  'Official Xiaomi stock HyperOS only'
-  '^## ⚙️ Matrix Configuration$'
-  '^## 🔑 Managers$'
+  '^# Marble Kernel · Matrix Build$'
+  'marble-banner\.svg'
+  'Before you flash'
+  'Match \*\*device \+ ROM\*\*'
+  '^## .*Matrix configuration$'
+  '^## .*Managers$'
+  '\| \*\*KernelSU-Next\*\* \| `v3\.2\.0` \| `33201` \|'
+  '\| \*\*SukiSU Ultra\*\* \| `v4\.1\.3-b88403d2@HEAD` \| `40813` \|'
+  '\| \*\*ReSukiSU\*\* \| `v4\.1\.0-d0f59d06@ReSukiSU` \| `34989` \|'
   '<summary><b>KernelSU-Next</b> — v3\.2\.0 · code 33201 · ✅ Passed</summary>'
   '<summary><b>SukiSU Ultra</b> — v4\.1\.3-b88403d2@HEAD · code 40813 · ✅ Passed</summary>'
   '<summary><b>ReSukiSU</b> — v4\.1\.0-d0f59d06@ReSukiSU · code 34989 · ✅ Passed</summary>'
-  '^## 🛡️ SUSFS$'
-  '^## 📲 Installation$'
-  '^## 📦 Artifacts & Checksums$'
+  '^## .*SUSFS$'
+  '^## .*Artifacts & checksums$'
+  '^## .*Installation$'
   'AK3_Marble-HyperOS_KSUNext-v3\.2\.0-code33201_SUSFS-v2\.2\.0_r5\.zip'
   'AK3_Marble-HyperOS_SukiSUUltra-v4\.1\.3-b88403d2-code40813_SUSFS-v2\.2\.0_r5\.zip'
   'AK3_Marble-HyperOS_ReSukiSU-v4\.1\.0-d0f59d06-code34989_SUSFS-v2\.2\.0_r5\.zip'
-  '^## 🙏 Credits$'
+  '^## .*Credits$'
   'KernelSU-Next team'
   'SukiSU Ultra team'
   'ReSukiSU team'
+  'Built with GitHub Actions · for Marble'
 )
+
+if grep -Eq 'Official Xiaomi stock HyperOS only|ROM Support' "${summary}"; then
+  echo "FAIL: matrix summary should not claim HyperOS-only support" >&2
+  exit 1
+fi
 
 for pattern in "${required_patterns[@]}"; do
   if ! grep -Eq "${pattern}" "${summary}"; then
@@ -104,7 +115,7 @@ for pattern in "${required_patterns[@]}"; do
   fi
 done
 
-if [[ "$(grep -c '^## 📲 Installation$' "${summary}")" -ne 1 ]]; then
+if [[ "$(grep -cE '^## .*Installation$' "${summary}")" -ne 1 ]]; then
   echo "FAIL: matrix summary should contain one shared Installation section" >&2
   exit 1
 fi
