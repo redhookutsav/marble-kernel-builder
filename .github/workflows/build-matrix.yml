@@ -216,12 +216,7 @@ jobs:
           [[ -n "${source_slug}" ]] || source_slug="melt"
           display="${source_slug}"
           if [[ -f config/kernel-sources.json ]]; then
-            display="$(KERNEL_SOURCE="${KERNEL_SOURCE}" python3 -c '
-import json, os
-with open("config/kernel-sources.json", encoding="utf-8") as fh:
-    presets = json.load(fh)
-print(presets.get(os.environ.get("KERNEL_SOURCE", ""), {}).get("display") or "")
-')"
+            display="$(KERNEL_SOURCE="${KERNEL_SOURCE}" python3 -c "import json,os; p=json.load(open('config/kernel-sources.json',encoding='utf-8')); print(p.get(os.environ.get('KERNEL_SOURCE',''),{}).get('display') or '')")"
             [[ -n "${display}" ]] || display="${source_slug}"
           fi
 
