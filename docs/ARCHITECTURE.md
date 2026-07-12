@@ -496,7 +496,7 @@ Then:
 
 1. `actions/attest` on `kernel-source/release/*.zip`.  
 2. Upload artifact `marble-flash-<label>-<scope>-r<run>` (zip, sha256, metadata, summary, audit, ccache stats).  
-3. Save ccache on **miss**; save ThinLTO cache on **miss** when thin (GHA exact keys are immutable).
+3. Save ccache / ThinLTO on **miss** even if the job **failed** (`!cancelled()`); skip on cancel or exact hit.
 
 ### Timeline
 
@@ -656,11 +656,15 @@ Path restored/saved: `/home/runner/.cache/thinlto`.
 
 ### 11.4 Save policy
 
-GitHub Actions **exact keys are immutable**. Marble saves ccache / ThinLTO only when:
+GitHub Actions **exact keys are immutable**. Marble saves **object caches** (ccache / ThinLTO) when:
 
 ```text
-success() && cache-hit != 'true'
+always() && !cancelled() && cache-hit != 'true'
 ```
+
+So a build that fails at ~90% compile still persists partial objects for the next run. Manual cancel does not save. Exact key already hit → skip save (immutable).
+
+**Product artifacts** (ZIP upload, attestation, draft release) remain **success-only**.
 
 Bump the **version prefix** (`v4`, `v1`, …) when key semantics change so stale buckets do not poison builds.
 

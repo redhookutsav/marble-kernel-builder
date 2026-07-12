@@ -416,15 +416,19 @@ jobs:
             kernel-source/release/ccache-stats.txt
             kernel-source/release/zip-name.env
 
+      # Object caches: save even when the build fails (e.g. 90% compile then OOM),
+      # so the next run can reuse partial work. Never save on cancel. Exact GHA
+      # keys are immutable — only save when this run did not restore an exact hit.
+      # Product artifacts (ZIP/release) stay success-only above.
       - name: Save ccache
-        if: ${{ inputs.enable_ccache && success() && steps.ccache-restore.outputs.cache-hit != 'true' }}
+        if: ${{ always() && inputs.enable_ccache && !cancelled() && steps.ccache-restore.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.cache-context.outputs.key }}
 
       - name: Save ThinLTO cache
-        if: ${{ inputs.lto == 'thin' && success() && steps.thinlto-restore.outputs.cache-hit != 'true' }}
+        if: ${{ always() && inputs.lto == 'thin' && !cancelled() && steps.thinlto-restore.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /home/runner/.cache/thinlto

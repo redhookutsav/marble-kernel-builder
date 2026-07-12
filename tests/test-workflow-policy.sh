@@ -55,6 +55,20 @@ if grep -Eq 'debug_artifacts|marble-debug-|Upload debug artifacts|retention-days
   exit 1
 fi
 
+# Object caches: save on failure too (!cancelled), not success-only — keeps partial compile work.
+grep -Fq '!cancelled()' "${core}" || {
+  echo "FAIL: ccache/ThinLTO save must allow failed builds via !cancelled()" >&2
+  exit 1
+}
+if grep -E 'Save ccache|Save ThinLTO cache' -A6 "${core}" | grep -q 'success()'; then
+  echo "FAIL: object-cache save must not be success()-only (partial compiles should persist)" >&2
+  exit 1
+fi
+grep -Fq 'always()' "${core}" || {
+  echo "FAIL: object-cache save steps should use always() so they run after a failed build" >&2
+  exit 1
+}
+
 grep -Fq 'CCACHE_COMPILERCHECK=content' scripts/build-kernel.sh || {
   echo "FAIL: ccache compiler validation is not content-based" >&2
   exit 1
