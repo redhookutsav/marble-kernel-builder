@@ -91,6 +91,8 @@ for artifact_dir in "${artifact_dirs[@]}"; do
   fi
 
   read -r expected_hash expected_name extra < "${checksum_path}" || true
+  # Git Bash / binary-mode sha256sum may prefix the filename with '*'.
+  expected_name="${expected_name#\*}"
   if [[ ! "${expected_hash:-}" =~ ^[a-fA-F0-9]{64}$ || \
         "${expected_name:-}" != "${zip_name}" || -n "${extra:-}" ]]; then
     echo "::error::Invalid checksum metadata for ${zip_name}"

@@ -7,12 +7,14 @@ on:
         description: Uploaded flash artifact name
         value: ${{ jobs.build.outputs.flash_artifact_name }}
     inputs:
-      source_repo:
+      kernel_source:
         required: true
         type: string
+        default: melt
       source_ref:
-        required: true
+        required: false
         type: string
+        default: ""
       manager:
         required: true
         type: string
@@ -71,7 +73,7 @@ jobs:
       flash_artifact_name: ${{ steps.artifact-name.outputs.name }}
     env:
       GH_TOKEN: ${{ github.token }}
-      SOURCE_REPO: ${{ inputs.source_repo }}
+      KERNEL_SOURCE: ${{ inputs.kernel_source }}
       SOURCE_REF: ${{ inputs.source_ref }}
       MANAGER: ${{ inputs.manager }}
       MANAGER_REF: ${{ inputs.manager_ref }}
@@ -98,10 +100,14 @@ jobs:
         if: ${{ inputs.run_policy_tests }}
         run: |
           for test_script in tests/test-*.sh; do
-            env -u SOURCE_REPO -u SOURCE_REF -u MANAGER -u MANAGER_REF -u ENABLE_SUSFS \
+            env -u SOURCE_REPO -u SOURCE_REF -u KERNEL_SOURCE -u MANAGER -u MANAGER_REF -u ENABLE_SUSFS \
               -u SUSFS_VERSION -u SUSFS_KERNEL_BRANCH -u SUSFS_REF -u SUSFS_EXPECTED_VERSION \
               bash "${test_script}"
           done
+
+      - name: Resolve kernel source preset
+        id: kernel-source
+        run: bash scripts/resolve-kernel-source.sh
 
       - name: Validate inputs
         run: bash scripts/validate-inputs.sh
@@ -109,8 +115,8 @@ jobs:
       - name: Checkout kernel source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          repository: ${{ inputs.source_repo }}
-          ref: ${{ inputs.source_ref }}
+          repository: ${{ steps.kernel-source.outputs.source_repo }}
+          ref: ${{ steps.kernel-source.outputs.source_ref }}
           path: kernel-source
           fetch-depth: 1
           persist-credentials: false
@@ -251,7 +257,8 @@ jobs:
           source config/marble.env
           source release/resolved-refs.env
           config_hash="$(sha256sum scripts/build-kernel.sh config/marble.env config/managers.json \
-            config/susfs-refs.json | sha256sum | cut -d' ' -f1)"
+            config/susfs-refs.json config/kernel-sources.json scripts/resolve-kernel-source.sh \
+            | sha256sum | cut -d' ' -f1)"
           toolchain_id="${ACTIVE_TOOLCHAIN_ID:-${TOOLCHAIN}}"
           prefix="marble-builder-ccache-v2-${RUNNER_OS}-${RUNNER_ARCH}-${toolchain_id}-${source_commit}"
           manager_prefix="${prefix}-${MANAGER}"
@@ -295,6 +302,16 @@ jobs:
         run: |
           cp release/resolved-refs.env kernel-source/release/resolved-refs.env
           {
+            echo "kernel_source=${KERNEL_SOURCE}"
+            echo "kernel_source_display=${KERNEL_SOURCE_DISPLAY:-}"
+            echo "kernel_source_author=${KERNEL_SOURCE_AUTHOR:-}"
+            echo "rom_family=${ROM_FAMILY:-}"
+            echo "rom_support=${ROM_SUPPORT:-}"
+            echo "supported_rom_label=${SUPPORTED_ROM_LABEL:-}"
+            echo "defconfig_mode=${DEFCONFIG_MODE:-}"
+            echo "defconfig=${DEFCONFIG:-}"
+            echo "base_defconfig=${BASE_DEFCONFIG:-}"
+            echo "config_fragments=${CONFIG_FRAGMENTS:-}"
             echo "source_repo=${SOURCE_REPO}"
             echo "source_ref=${SOURCE_REF}"
             echo "source_commit=$(git -C kernel-source rev-parse HEAD)"

@@ -71,17 +71,34 @@
 
 ## 🏗️ How This Repo Works
 
-Marble uses a **two-repo model** so the kernel source fork stays clean forever:
+Marble uses a **builder + selectable kernel source** model so upstream trees stay clean:
 
 | Repository | Role |
 |------------|------|
-| [`mohdakil2426/android_kernel_xiaomi_marble`](https://github.com/mohdakil2426/android_kernel_xiaomi_marble) | Clean kernel source fork — **never patched in-tree** |
 | [`mohdakil2426/marble-kernel-builder`](https://github.com/mohdakil2426/marble-kernel-builder) | This repo — workflows, scripts, config, packaging |
+| Selected kernel source (dropdown) | Clean upstream / fork checked out only in CI — **never patched in-tree** |
+
+### Kernel source presets (workflow dropdown)
+
+Named after the project / author. Pick one in **Build Marble Kernel**:
+
+| Dropdown | Author / project | Source repo | Default ref | ROM family |
+|----------|------------------|-------------|-------------|------------|
+| `melt` | Melt | [`mohdakil2426/android_kernel_xiaomi_marble`](https://github.com/mohdakil2426/android_kernel_xiaomi_marble) | `melt-rebase` | Stock **HyperOS** |
+| `lineageos` | LineageOS | [`LineageOS/android_kernel_xiaomi_sm8450`](https://github.com/LineageOS/android_kernel_xiaomi_sm8450) | `lineage-23.2` | **LOS-based** custom ROMs only |
+| `evolution-x` | Evolution-X | [`Evolution-X-Devices/kernel_xiaomi_sm8450`](https://github.com/Evolution-X-Devices/kernel_xiaomi_sm8450) | `cnb` | **LOS-based** custom ROMs only |
+| `pablo` | Pablo | [`aosp-pablo/android_kernel_xiaomi_sm8450`](https://github.com/aosp-pablo/android_kernel_xiaomi_sm8450) | `16` | **LOS-based** custom ROMs only |
+
+- **HyperOS (`melt`)** uses `marble_defconfig`.
+- **LOS-family kernels** merge `gki_defconfig` + `vendor/waipio_GKI.config` + `vendor/xiaomi_GKI.config` + `vendor/marble_GKI.config` + `vendor/debugfs.config` (same chain as Lineage device trees).
+- Optional **`source_ref`** overrides the preset default branch/tag/commit.
 
 **CI flow (simplified):**
 
 ```text
-Checkout builder + kernel source
+Checkout builder → resolve kernel preset
+        ↓
+Checkout selected kernel source
         ↓
 Apply manager + SUSFS (temp workspace only)
         ↓
@@ -92,7 +109,7 @@ Package AnyKernel3 ZIP + metadata
 Upload artifacts  ·  optional draft release
 ```
 
-Patches never land on the source fork — only inside the temporary CI workspace.
+Patches never land on the source repos — only inside the temporary CI workspace.
 
 ---
 
@@ -139,9 +156,10 @@ Do **not** enable SUSFS with `none` or `kernelsu`.
 ### Quick start — build
 
 1. Open **[Actions → Build Marble Kernel → Run workflow](https://github.com/mohdakil2426/marble-kernel-builder/actions)**
-2. Select manager checkbox(es)
-3. Set SUSFS / source / toolchain / scope as needed
-4. Run · download artifacts when green
+2. Choose **kernel source** from the dropdown (`melt` / `lineageos` / `evolution-x` / `pablo`)
+3. Select manager checkbox(es)
+4. Set SUSFS / optional source_ref override / toolchain / scope as needed
+5. Run · download artifacts when green
 
 ### Draft release
 
@@ -169,8 +187,8 @@ Do **not** enable SUSFS with `none` or `kernelsu`.
 | `enable_susfs` | `false` | Enable SUSFS for managers that support it |
 | `susfs_version` | `v2.2.0` | `v2.2.0` · `v2.1.0` · `custom` |
 | `susfs_ref` | *(empty)* | Branch/tag/commit — only with `custom` |
-| `source_repo` | `mohdakil2426/android_kernel_xiaomi_marble` | Kernel source repository |
-| `source_ref` | `melt-rebase` | Branch, tag, or commit |
+| `kernel_source` | `melt` | Dropdown: `melt` · `lineageos` · `evolution-x` · `pablo` |
+| `source_ref` | *(empty)* | Optional branch/tag/commit override (preset default if empty) |
 | `build_scope` | `image-only` | `image-only` or `full` |
 | `toolchain` | `android-r416183b` | `android-r416183b` (default) or experimental `llvm-22.1.8` |
 | `enable_ccache` | `true` | ccache for compatible rebuilds |
@@ -200,8 +218,8 @@ Run in order. Verify each step before the next:
 
 ```text
 marble-flash-<label>-<scope>-r<run>/
-├─ AK3_Marble-HyperOS_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip
-├─ AK3_Marble-HyperOS_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip.sha256
+├─ AK3_Marble-<AuthorOrROM>_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip
+├─ AK3_Marble-<AuthorOrROM>_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip.sha256
 ├─ build-info.txt       # resolved refs + workflow metadata
 ├─ build-info.json      # structured metadata for tooling
 ├─ summary.md           # build summary (also used as release notes)
@@ -213,9 +231,9 @@ marble-flash-<label>-<scope>-r<run>/
 
 ```text
 AK3_Marble-HyperOS_KSUNext-v3.2.0-code33203_SUSFS-v2.2.0_r9.zip
-AK3_Marble-HyperOS_SukiSUUltra-v4.1.3-code40813_SUSFS-v2.2.0_r9.zip
-AK3_Marble-HyperOS_ReSukiSU-v4.1.0-code34990_SUSFS-v2.2.0_r9.zip
-AK3_Marble-HyperOS_KernelSU-v1.0.3-code12345_NoSUSFS_r9.zip
+AK3_Marble-LineageOS_KSUNext-v3.2.0-code33203_SUSFS-v2.2.0_r9.zip
+AK3_Marble-Evolution-X_SukiSUUltra-v4.1.3-code40813_SUSFS-v2.2.0_r9.zip
+AK3_Marble-Pablo_ReSukiSU-v4.1.0-code34990_SUSFS-v2.2.0_r9.zip
 AK3_Marble-HyperOS_NoRoot_NoSUSFS_r9.zip
 ```
 

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Preserve caller/preset ROM label before marble.env defaults are applied.
+_preset_rom_label="${SUPPORTED_ROM_LABEL:-}"
+
 source config/marble.env
 
 KERNEL_DIR="${KERNEL_DIR:-kernel-source}"
@@ -8,6 +11,9 @@ MANAGER="${MANAGER:-none}"
 ENABLE_SUSFS="${ENABLE_SUSFS:-false}"
 BUILD_SCOPE="${BUILD_SCOPE:-image-only}"
 run_number="${GITHUB_RUN_NUMBER:-local}"
+# Runtime/preset label wins over config/marble.env default.
+SUPPORTED_ROM_LABEL="${_preset_rom_label:-${SUPPORTED_ROM_LABEL:-HyperOS}}"
+unset _preset_rom_label
 
 release_dir="${KERNEL_DIR}/${RELEASE_DIR}"
 if [[ -f release/resolved-refs.env ]]; then
@@ -43,9 +49,17 @@ if [[ "${ENABLE_SUSFS}" == "true" ]]; then
   susfs_label="SUSFS-${susfs_reported_version:-${SUSFS_VERSION:-unknown}}"
 fi
 
-# Final format: AK3_Marble-HyperOS_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip
+# Prefer runtime/preset ROM label (author-named kernel family), fall back to marble.env.
+package_label="${SUPPORTED_ROM_LABEL:-HyperOS}"
+package_label="$(printf '%s' "${package_label}" | sed -E \
+  -e 's/[^A-Za-z0-9._-]+/-/g' -e 's/^-+//' -e 's/-+$//')"
+if [[ -z "${package_label}" ]]; then
+  package_label="HyperOS"
+fi
+
+# Final format: AK3_Marble-<AuthorOrROM>_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip
 if [[ "${MANAGER}" == "none" ]]; then
-  zip_name="AK3_Marble-${SUPPORTED_ROM_LABEL}_NoRoot_NoSUSFS_r${run_number}.zip"
+  zip_name="AK3_Marble-${package_label}_NoRoot_NoSUSFS_r${run_number}.zip"
 else
   manager_identity="${manager_label}"
   if [[ -n "${manager_version}" ]]; then
@@ -54,7 +68,7 @@ else
   if [[ -n "${manager_code}" ]]; then
     manager_identity+="-code${manager_code}"
   fi
-  zip_name="AK3_Marble-${SUPPORTED_ROM_LABEL}_${manager_identity}_${susfs_label}_r${run_number}.zip"
+  zip_name="AK3_Marble-${package_label}_${manager_identity}_${susfs_label}_r${run_number}.zip"
 fi
 
 if [[ "${PACKAGE_NAME_ONLY:-false}" == "true" ]]; then

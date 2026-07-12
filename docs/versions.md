@@ -4,7 +4,10 @@ Checked on 2026-06-23.
 
 | Component | Repo | Default Ref | Version / Commit |
 |---|---|---|---|
-| Kernel source | `Pzqqt/android_kernel_xiaomi_marble` | `melt-rebase` | Poco F5 / marble source |
+| Kernel source (`melt`) | `mohdakil2426/android_kernel_xiaomi_marble` | `melt-rebase` | HyperOS / Melt marble source (`marble_defconfig`) |
+| Kernel source (`lineageos`) | `LineageOS/android_kernel_xiaomi_sm8450` | `lineage-23.2` | LOS GKI fragments (`gki_defconfig` + marble vendor configs) |
+| Kernel source (`evolution-x`) | `Evolution-X-Devices/kernel_xiaomi_sm8450` | `cnb` | LOS-family GKI fragments for Evolution X / custom LOS |
+| Kernel source (`pablo`) | `aosp-pablo/android_kernel_xiaomi_sm8450` | `16` | LOS-family GKI fragments (Pablo / aosp-pablo) |
 | Android kernel Clang | `https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86` | `master-kernel-build-2021` | commit `6e3223f76384455acde43affde3df0ea9df66c0d`; sparse path `clang-r416183b`, matching `build.config.common` |
 | LLVM experimental | `https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/LLVM-22.1.8-Linux-X64.tar.xz` | `llvmorg-22.1.8` | SHA-256 `df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384`; selectable with `toolchain=llvm-22.1.8` |
 | AnyKernel3 | `osm0sis/AnyKernel3` | commit `dca9dc370838d919d56c1f59ec78b27a14a72c68` | Immutable packaging template |
@@ -19,7 +22,7 @@ Checked on 2026-06-23.
 
 The workflow resolves branch, tag, and commit inputs to exact commits at run time and records them in `release/build-info.txt`. For SUSFS, the user chooses `susfs_version=v2.2.0`, `susfs_version=v2.1.0`, or `susfs_version=custom`. Custom mode uses `susfs_ref` and verifies `susfs_expected_version` when provided.
 
-Builds support official Xiaomi stock HyperOS only on Poco F5 (`marblein`) and Redmi Note 12 Turbo (`marble`). Manager artifacts use `AK3_Marble-HyperOS_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip`; enabling `create_draft_release` on the matrix workflow can turn that successful run into a ZIP-only draft release without rebuilding.
+Device targets remain Poco F5 (`marblein`) and Redmi Note 12 Turbo (`marble`). ROM support depends on the selected kernel preset: `melt` is stock HyperOS; `lineageos`, `evolution-x`, and `pablo` are for LOS-based custom ROMs only. ZIP names use the preset author/ROM label: `AK3_Marble-<Label>_<Manager>-<version>-code<code>_<SUSFS>_r<run>.zip`. Enabling `create_draft_release` creates a ZIP-only draft tag `marble-<preset>-r<run>` without rebuilding.
 
 Manager repositories are allowlisted for normal builds. KernelSU-Next is official `KernelSU-Next/KernelSU-Next@dev` when SUSFS is disabled; when SUSFS is enabled, the workflow intentionally switches only that manager to `pershoot/KernelSU-Next@dev-susfs` because current official KernelSU-Next SUSFS paths are not Marble-compatible. Supported SUSFS paths apply only the kernel-side SUSFS patch/files and verify final Kconfig values. Official KernelSU + SUSFS remains rejected until a compatible integration exists.
 

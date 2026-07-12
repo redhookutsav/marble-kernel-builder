@@ -39,7 +39,48 @@ else
 fi
 
 clang --version | tee "${RELEASE_DIR}/build.log"
-make O="${OUT_DIR}" ARCH="${ARCH}" LLVM=1 LLVM_IAS=1 CC="${CC}" "${DEFCONFIG}" 2>&1 | tee -a "${RELEASE_DIR}/build.log"
+
+DEFCONFIG_MODE="${DEFCONFIG_MODE:-single}"
+case "${DEFCONFIG_MODE}" in
+  single)
+    active_defconfig="${DEFCONFIG:-marble_defconfig}"
+    echo "Using single defconfig: ${active_defconfig}" | tee -a "${RELEASE_DIR}/build.log"
+    make O="${OUT_DIR}" ARCH="${ARCH}" LLVM=1 LLVM_IAS=1 CC="${CC}" "${active_defconfig}" 2>&1 | tee -a "${RELEASE_DIR}/build.log"
+    ;;
+  gki_fragments)
+    base_defconfig="${BASE_DEFCONFIG:-gki_defconfig}"
+    echo "Using GKI base defconfig: ${base_defconfig}" | tee -a "${RELEASE_DIR}/build.log"
+    make O="${OUT_DIR}" ARCH="${ARCH}" LLVM=1 LLVM_IAS=1 CC="${CC}" "${base_defconfig}" 2>&1 | tee -a "${RELEASE_DIR}/build.log"
+
+    if [[ -z "${CONFIG_FRAGMENTS:-}" ]]; then
+      echo "::error::DEFCONFIG_MODE=gki_fragments requires CONFIG_FRAGMENTS"
+      exit 1
+    fi
+
+    fragment_paths=()
+    # shellcheck disable=SC2206
+    fragment_list=(${CONFIG_FRAGMENTS})
+    for fragment in "${fragment_list[@]}"; do
+      fragment_path="arch/${ARCH}/configs/${fragment}"
+      if [[ ! -f "${fragment_path}" ]]; then
+        echo "::error::Missing config fragment: ${fragment_path}"
+        exit 1
+      fi
+      fragment_paths+=("${fragment_path}")
+      echo "  + fragment ${fragment_path}" | tee -a "${RELEASE_DIR}/build.log"
+    done
+
+    if [[ ! -x scripts/kconfig/merge_config.sh ]]; then
+      echo "::error::scripts/kconfig/merge_config.sh is missing or not executable"
+      exit 1
+    fi
+    ./scripts/kconfig/merge_config.sh -O "${OUT_DIR}" -m "${OUT_DIR}/.config" "${fragment_paths[@]}" 2>&1 | tee -a "${RELEASE_DIR}/build.log"
+    ;;
+  *)
+    echo "::error::Unsupported DEFCONFIG_MODE: ${DEFCONFIG_MODE}"
+    exit 1
+    ;;
+esac
 
 if [[ "${MANAGER}" != "none" ]]; then
   scripts/config --file "${OUT_DIR}/.config" -e KSU

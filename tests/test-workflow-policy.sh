@@ -110,6 +110,33 @@ grep -Fq 'concurrency:' "${wrapper}" || {
   exit 1
 }
 
+grep -Fq 'kernel_source:' "${matrix}" || {
+  echo "FAIL: matrix workflow does not expose the kernel_source dropdown" >&2
+  exit 1
+}
+
+for preset in melt lineageos evolution-x pablo; do
+  grep -Fq -- "- ${preset}" "${matrix}" || {
+    echo "FAIL: matrix workflow missing kernel_source option: ${preset}" >&2
+    exit 1
+  }
+done
+
+grep -Fq 'kernel_source: ${{ inputs.kernel_source }}' "${matrix}" || {
+  echo "FAIL: matrix workflow does not pass kernel_source to build-core" >&2
+  exit 1
+}
+
+grep -Fq 'scripts/resolve-kernel-source.sh' "${core}" || {
+  echo "FAIL: build-core does not resolve kernel source presets" >&2
+  exit 1
+}
+
+[[ -f config/kernel-sources.json ]] || {
+  echo "FAIL: config/kernel-sources.json is missing" >&2
+  exit 1
+}
+
 grep -Fq 'toolchain:' "${matrix}" || {
   echo "FAIL: matrix workflow does not expose the toolchain selector" >&2
   exit 1

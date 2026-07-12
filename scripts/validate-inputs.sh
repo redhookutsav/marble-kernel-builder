@@ -6,6 +6,7 @@ ENABLE_SUSFS="${ENABLE_SUSFS:-false}"
 BUILD_SCOPE="${BUILD_SCOPE:-image-only}"
 SOURCE_REPO="${SOURCE_REPO:-}"
 SOURCE_REF="${SOURCE_REF:-}"
+KERNEL_SOURCE="${KERNEL_SOURCE:-}"
 SUSFS_VERSION="${SUSFS_VERSION:-v2.2.0}"
 SUSFS_KERNEL_BRANCH="${SUSFS_KERNEL_BRANCH:-gki-android12-5.10}"
 SUSFS_REF="${SUSFS_REF:-}"
@@ -16,6 +17,29 @@ case "${MANAGER}" in
   none|kernelsu|kernelsu-next|sukisu-ultra|resukisu) ;;
   *) echo "::error::Unsupported manager: ${MANAGER}"; exit 1 ;;
 esac
+
+if [[ -n "${KERNEL_SOURCE}" ]]; then
+  if [[ ! -f config/kernel-sources.json ]]; then
+    echo "::error::config/kernel-sources.json is missing"
+    exit 1
+  fi
+  if ! KERNEL_SOURCE="${KERNEL_SOURCE}" python3 - config/kernel-sources.json <<'PY'
+import json
+import os
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as fh:
+    presets = json.load(fh)
+kernel_source = os.environ["KERNEL_SOURCE"]
+if kernel_source not in presets:
+    print(f"::error::Unsupported kernel_source: {kernel_source}", file=sys.stderr)
+    print("Allowed: " + ", ".join(sorted(presets)), file=sys.stderr)
+    sys.exit(1)
+PY
+  then
+    exit 1
+  fi
+fi
 
 case "${ENABLE_SUSFS}" in
   true|false) ;;

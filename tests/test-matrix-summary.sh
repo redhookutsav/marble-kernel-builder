@@ -103,8 +103,10 @@ required_patterns=(
   'Built with GitHub Actions · for Marble'
 )
 
-if grep -Eq 'Official Xiaomi stock HyperOS only|ROM Support' "${summary}"; then
-  echo "FAIL: matrix summary should not claim HyperOS-only support" >&2
+# Matrix summary may report ROM support from build-info, but must not hardcode only HyperOS wording
+# when artifacts omit rom_support. Current fixtures include HyperOS packaging labels only.
+if grep -Eq 'MIUI, AOSP, and custom ROMs are unsupported' "${summary}"; then
+  echo "FAIL: matrix summary should not use the old single-build HyperOS-only install wording" >&2
   exit 1
 fi
 

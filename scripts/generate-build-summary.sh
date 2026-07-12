@@ -31,6 +31,12 @@ source_repo="$(get_info source_repo)"
 source_ref="$(get_info source_ref)"
 source_commit="$(get_info source_commit)"
 workflow_run="$(get_info workflow_run)"
+kernel_source_id="$(get_info kernel_source)"
+kernel_source_author="$(get_info kernel_source_author)"
+rom_support="$(get_info rom_support)"
+if [[ -z "${rom_support}" ]]; then
+  rom_support="Official Xiaomi stock ${SUPPORTED_ROM_LABEL} only"
+fi
 manager_name="$(get_info manager)"
 manager_repo="$(get_info manager_repo)"
 manager_ref="$(get_info manager_ref)"
@@ -127,7 +133,10 @@ build_badge_url="https://img.shields.io/badge/Build-Passing-2088FF?style=for-the
   echo "| | |"
   echo "|:---|:---|"
   echo "| 📱 **Device** | Poco F5 (\`marblein\`) · Redmi Note 12 Turbo (\`marble\`) |"
-  echo "| 🟠 **ROM Support** | **Official Xiaomi stock ${SUPPORTED_ROM_LABEL} only** |"
+  echo "| 🟠 **ROM Support** | **${rom_support}** |"
+  if [[ -n "${kernel_source_author}" || -n "${kernel_source_id}" ]]; then
+    echo "| 👤 **Kernel Source** | **${kernel_source_author:-${kernel_source_id}}** (\`${kernel_source_id:-unknown}\`) |"
+  fi
   echo "| 🧬 **Kernel Base** | \`android12-5.10\` |"
   echo "| 🛠️ **Build Scope** | \`${BUILD_SCOPE}\` |"
   echo "| 📦 **Source** | [\`${source_ref} @ $(short_commit "${source_commit}")\`](https://github.com/${source_repo}/commit/${source_commit}) |"
@@ -203,7 +212,7 @@ build_badge_url="https://img.shields.io/badge/Build-Passing-2088FF?style=for-the
   echo
   echo "- 🔓 Unlocked bootloader"
   echo "- 📱 Poco F5 (\`marblein\`) or Redmi Note 12 Turbo (\`marble\`) **only**"
-  echo "- 🟠 **Official Xiaomi stock ${SUPPORTED_ROM_LABEL} only** — MIUI, AOSP, and custom ROMs are unsupported"
+  echo "- 🟠 **${rom_support}** — flash only on a matching ROM family"
   echo "- 💾 Stock \`boot.img\` from the **same ROM/firmware** stored safely outside the device"
   if [[ "${manager_name}" != "none" && -n "${manager_app_url}" ]]; then
     echo "- 📦 [${manager_display} manager app](${manager_app_url})"

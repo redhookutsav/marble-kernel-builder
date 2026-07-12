@@ -170,7 +170,16 @@ scope_badge_url="https://img.shields.io/badge/Scope-$(badge_encode "${BUILD_SCOP
   echo
   echo "| | |"
   echo "|:---|:---|"
+  kernel_source_id="$(get_info "${first_info}" kernel_source)"
+  kernel_source_author="$(get_info "${first_info}" kernel_source_author)"
+  rom_support="$(get_info "${first_info}" rom_support)"
   echo "| 📱 **Device** | Poco F5 (\`marblein\`) · Redmi Note 12 Turbo (\`marble\`) |"
+  if [[ -n "${rom_support}" ]]; then
+    echo "| 🟠 **ROM support** | **${rom_support}** |"
+  fi
+  if [[ -n "${kernel_source_author}" || -n "${kernel_source_id}" ]]; then
+    echo "| 👤 **Kernel source** | **${kernel_source_author:-${kernel_source_id}}** (\`${kernel_source_id:-unknown}\`) |"
+  fi
   echo "| 🧬 **Kernel base** | \`android12-5.10\` |"
   echo "| 🛠️ **Build scope** | \`${BUILD_SCOPE}\` |"
   echo "| 📦 **Source** | [\`${source_ref} @ $(short_commit "${source_commit}")\`](https://github.com/${source_repo}/commit/${source_commit}) |"

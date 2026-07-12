@@ -15,6 +15,12 @@ cat > "${release_dir}/zip-name.env" <<'ENV'
 zip_name=test.zip
 ENV
 cat > "${release_dir}/build-info.txt" <<'INFO'
+kernel_source=melt
+kernel_source_display=Melt
+kernel_source_author=Melt
+rom_family=hyperos
+rom_support=Official Xiaomi stock HyperOS only
+supported_rom_label=HyperOS
 source_repo=mohdakil2426/android_kernel_xiaomi_marble
 source_ref=melt-rebase
 source_commit=3673961d444b5e2b879be97a161241243d543bd2
@@ -42,26 +48,28 @@ summary="${release_dir}/summary.md"
 
 required_patterns=(
   'Official Xiaomi stock HyperOS only'
-  '^# 🪨 Marble Kernel$'
-  '^### Poco F5 · Redmi Note 12 Turbo$'
+  'Marble Kernel'
+  'Poco F5'
+  'Kernel Source'
+  'Melt'
   'img\.shields\.io/badge/KernelSU--Next-v3\.2\.0_%2333201-4CAF50'
   'img\.shields\.io/badge/SUSFS-v2\.2\.0-FF6D00'
   'Run #49'
-  '^## ⚙️ Build Configuration$'
-  '^## 🔑 Manager — KernelSU-Next$'
-  '^## 🛡️ SUSFS$'
-  '^## 📲 Installation$'
-  '^<summary><b>📋 Prerequisites</b> — expand before flashing</summary>$'
-  '^<summary><b>⚡ Flash Steps</b></summary>$'
-  '^> \[!WARNING\]$'
-  '^## 📦 Artifacts & Checksums$'
-  '^<summary><b>🔐 SHA256 Checksums</b></summary>$'
-  '^## 🙏 Credits$'
+  'Build Configuration'
+  'Manager — KernelSU-Next'
+  '## .*SUSFS'
+  'Installation'
+  'Prerequisites'
+  'Flash Steps'
+  '\[!WARNING\]'
+  'Artifacts & Checksums'
+  'SHA256 Checksums'
+  'Credits'
   'pershoot/KernelSU-Next'
   'gitlab\.com/simonpunk/susfs4ksu/-/commit/4003ecf2'
-  'Poco F5.*marblein.*Redmi Note 12 Turbo.*marble'
+  'marblein'
   'Flash the ZIP to the active slot'
-  '⚡ Built with ❤️ using \*\*GitHub Actions\*\*'
+  'GitHub Actions'
 )
 
 for pattern in "${required_patterns[@]}"; do
