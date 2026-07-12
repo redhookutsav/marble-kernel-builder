@@ -10,7 +10,6 @@ on:
       kernel_source:
         required: true
         type: string
-        default: melt
       source_ref:
         required: false
         type: string
