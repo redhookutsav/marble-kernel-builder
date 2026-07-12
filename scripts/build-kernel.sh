@@ -41,8 +41,12 @@ fi
 
 if [[ "${USE_CCACHE}" == "true" ]] && command -v ccache >/dev/null 2>&1; then
   export CC="ccache clang"
-  # Same 4G cap for both toolchains (android-r416183b and llvm-22.1.8).
-  ccache -M 4G
+  # LLVM 22 + LOS trees are heavier; allow a larger object cache when that toolchain is selected.
+  if [[ "${TOOLCHAIN}" == "llvm-22.1.8" ]]; then
+    ccache -M 6G
+  else
+    ccache -M 4G
+  fi
   ccache -o compression=true
   # compression_level is supported on modern ccache; ignore if unavailable.
   ccache -o compression_level=6 2>/dev/null || true
@@ -147,12 +151,20 @@ fi
 if [[ "${LTO}" == "thin" ]]; then
   # Cap ThinLTO parallel codegen on free runners (~7 GiB) to avoid OOM during link.
   THINLTO_JOBS="${THINLTO_JOBS:-2}"
+  # WildKernels-style durable ThinLTO cache (restored/saved by the workflow when present).
+  THINLTO_CACHE_DIR="${THINLTO_CACHE_DIR:-${HOME}/.cache/thinlto}"
+  mkdir -p "${THINLTO_CACHE_DIR}"
   wrapper="$(pwd)/${RELEASE_DIR}/ld-thinlto-wrapper"
-  printf '#!/bin/bash\nexec ld.lld "$@" --thinlto-jobs=%s\n' "${THINLTO_JOBS}" > "${wrapper}"
+  {
+    printf '#!/bin/bash\n'
+    printf 'exec ld.lld "$@" --thinlto-jobs=%s --thinlto-cache-dir=%q\n' \
+      "${THINLTO_JOBS}" "${THINLTO_CACHE_DIR}"
+  } > "${wrapper}"
   chmod +x "${wrapper}"
   export LD="${wrapper}"
   export HOSTLD="${wrapper}"
-  echo "ThinLTO jobs=${THINLTO_JOBS} via ${wrapper}" | tee -a "${RELEASE_DIR}/build.log"
+  export THINLTO_CACHE_DIR
+  echo "ThinLTO jobs=${THINLTO_JOBS} cache=${THINLTO_CACHE_DIR} via ${wrapper}" | tee -a "${RELEASE_DIR}/build.log"
 fi
 
 make -j"${JOBS}" O="${OUT_DIR}" ARCH="${ARCH}" LLVM=1 LLVM_IAS=1 CC="${CC}" "${targets[@]}" 2>&1 | tee -a "${RELEASE_DIR}/build.log"

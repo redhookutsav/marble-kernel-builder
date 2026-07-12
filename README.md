@@ -193,7 +193,7 @@ Do **not** enable SUSFS with `none` or `kernelsu`.
 | `build_scope` | `image-only` | `image-only` or `full` |
 | `toolchain` | `android-r416183b` | `android-r416183b` (default) or experimental `llvm-22.1.8` |
 | `lto` | `thin` | Clang LTO mode: `none` · `thin` (default, free-runner safe) · `full` (needs more RAM) |
-| `enable_ccache` | `true` | ccache for compatible rebuilds (4 GiB cap; cache identity includes LTO) |
+| `enable_ccache` | `true` | ccache (4 GiB Melt / 6 GiB LLVM) + ThinLTO Actions cache when `lto=thin` |
 | `create_draft_release` | `false` | Create one ZIP-only draft release after a full success |
 
 </details>
@@ -272,7 +272,8 @@ Full pin table: [`docs/versions.md`](docs/versions.md)
 | **Actions** | Official actions pinned to immutable commits · Dependabot weekly |
 | **Android Clang** | Partial clone + sparse checkout · pinned commit verified before use |
 | **LLVM 22.1.8** | Official release only · SHA-256 check · separate cache |
-| **ccache** | 4 GiB cap · compression on · key by compiler / source / manager / SUSFS / scope / **LTO** / config |
+| **ccache** | 4 GiB (Melt) / 6 GiB (LLVM 22) · compression · multi-prefix restore-keys · **LTO** in identity |
+| **ThinLTO cache** | Separate Actions cache (`~/.cache/thinlto`) when `lto=thin` (Wild-style LTO reuse) |
 | **Policy** | Matrix policy tests once before fan-out |
 | **Disk** | Cleanup only if free space &lt; 20 GiB |
 | **Artifacts** | Zero recompression · 30-day retention |

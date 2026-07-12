@@ -44,4 +44,6 @@ Notes:
 
 - **Melt / HyperOS** keeps LTO enabled (default `thin`) with Android `clang-r416183b`.
 - **LOS-family** presets (`lineageos`, `evolution-x`, `pablo`) should use `toolchain=llvm-22.1.8` and `lto=thin` on free runners; the workflow enables swap and caps parallelism to reduce OOM risk.
-- Ccache is capped at **4 GiB** with content-based compiler checks; the Actions cache key includes **LTO mode** so different LTO settings do not share object caches.
+- Ccache: **4 GiB** (Android clang) / **6 GiB** (LLVM 22), content-based compiler checks, multi-level restore-keys (toolchain+LTO → kernel → source → manager).
+- ThinLTO: separate Actions cache for `~/.cache/thinlto` when `lto=thin` (similar to WildKernels LTO cache bucket).
+- Disk: Wild-style SDK cleanup on kernel jobs (especially when LTO is enabled or free space is low).
