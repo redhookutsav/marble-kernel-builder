@@ -58,8 +58,11 @@ android_clang_version="$(get_info android_clang_version)"
 android_clang_commit="$(get_info android_clang_commit)"
 lto_mode="$(get_info lto)"
 lto_mode="${lto_mode:-thin}"
+toolchain_id="$(get_info toolchain)"
 ccache_hit="$(get_info ccache_hit)"
 thinlto_cache_hit="$(get_info thinlto_cache_hit)"
+ccache_key="$(get_info ccache_key)"
+thinlto_cache_key="$(get_info thinlto_cache_key)"
 package_family="$(get_info package_family)"
 quality_label="$(get_info quality_label)"
 if [[ -z "${quality_label}" ]]; then
@@ -154,14 +157,25 @@ build_badge_url="https://img.shields.io/badge/Build-Passing-2088FF?style=for-the
   fi
   echo "| 🧪 **Quality** | \`${quality_label}\` |"
   echo "| 🔗 **LTO** | \`${lto_mode}\` |"
+  if [[ -n "${toolchain_id}" ]]; then
+    echo "| 🧰 **Toolchain** | \`${toolchain_id}\` |"
+  fi
   echo "| 📦 **Source** | [\`${source_ref} @ $(short_commit "${source_commit}")\`](https://github.com/${source_repo}/commit/${source_commit}) |"
   echo "| 🔨 **Compiler** | \`${android_clang_version:-clang-r416183b}\` |"
   if [[ -n "${android_clang_commit}" ]]; then
     echo "| 🧷 **Compiler Commit** | \`$(short_commit "${android_clang_commit}")\` |"
   fi
-  echo "| 💾 **Ccache hit** | \`${ccache_hit:-unknown}\` · ${ccache_stats_line} |"
-  echo "| 🧵 **ThinLTO cache hit** | \`${thinlto_cache_hit:-n/a}\` |"
   echo
+  echo "---"
+  echo
+
+  # ── Cache (CI only — stripped from GitHub Release notes) ──────────────────
+  summary_emit_cache_section \
+    "${ccache_hit:-unknown}" \
+    "${thinlto_cache_hit:-n/a}" \
+    "${ccache_stats_line}" \
+    "${ccache_key}" \
+    "${thinlto_cache_key}"
   echo "---"
   echo
 

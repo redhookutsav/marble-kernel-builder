@@ -210,6 +210,45 @@ lto_badge_url="https://img.shields.io/badge/LTO-$(badge_encode "${lto_mode}")-9C
   echo
   echo "---"
   echo
+
+  # ── Cache (CI only — stripped from GitHub Release notes) ──────────────────
+  {
+    echo "${SUMMARY_CACHE_START}"
+    echo "## 💾 Cache"
+    echo
+    echo "> CI diagnostics only — this section is **not** included in GitHub Release notes."
+    echo
+    echo "| Manager | Actions ccache | ThinLTO | Object hits |"
+    echo "|:---|:---:|:---:|:---|"
+    for artifact_dir in "${artifact_dirs[@]}"; do
+      build_info="${artifact_dir}/build-info.txt"
+      [[ -f "${build_info}" ]] || continue
+      m_name="$(get_info "${build_info}" manager)"
+      m_display="$(manager_display "${m_name}")"
+      m_ccache="$(get_info "${build_info}" ccache_hit)"
+      m_thin="$(get_info "${build_info}" thinlto_cache_hit)"
+      m_stats="$(summary_format_ccache_hits "${artifact_dir}/ccache-stats.txt")"
+      echo "| **${m_display}** | \`${m_ccache:-unknown}\` | \`${m_thin:-n/a}\` | ${m_stats} |"
+    done
+    # Keys from first artifact (same source/toolchain matrix row)
+    first_ccache_key="$(get_info "${first_info}" ccache_key)"
+    first_thin_key="$(get_info "${first_info}" thinlto_cache_key)"
+    if [[ -n "${first_ccache_key}" || -n "${first_thin_key}" ]]; then
+      echo
+      echo "| | |"
+      echo "|:---|:---|"
+      if [[ -n "${first_ccache_key}" ]]; then
+        echo "| 🔑 **ccache key (sample)** | \`${first_ccache_key}\` |"
+      fi
+      if [[ -n "${first_thin_key}" ]]; then
+        echo "| 🔑 **ThinLTO key (sample)** | \`${first_thin_key}\` |"
+      fi
+    fi
+    echo
+    echo "${SUMMARY_CACHE_END}"
+  }
+  echo "---"
+  echo
   echo "## 🔑 Managers"
   echo
   echo "| Manager | Version | Code | SUSFS | Status |"

@@ -55,6 +55,14 @@ BUILD_SCOPE=image-only \
   echo "FAIL: combined release summary was not generated" >&2
   exit 1
 }
+[[ -s "${tmp_dir}/matrix-summary-release.md" ]] || {
+  echo "FAIL: release notes file without cache section was not generated" >&2
+  exit 1
+}
+if grep -Eq 'marble-ci-cache|^## .*Cache$' "${tmp_dir}/matrix-summary-release.md"; then
+  echo "FAIL: matrix-summary-release.md must not include CI cache section" >&2
+  exit 1
+fi
 [[ "$(wc -l < "${tmp_dir}/release-assets.txt")" -eq 2 ]] || {
   echo "FAIL: release manifest should contain two ZIPs" >&2
   exit 1

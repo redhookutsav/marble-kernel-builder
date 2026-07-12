@@ -348,6 +348,11 @@ grep -Fq 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' .git
   exit 1
 }
 
+grep -Fq 'matrix-summary-release.md' .github/workflows/build-matrix.yml || {
+  echo "FAIL: draft release must prefer matrix-summary-release.md (no CI cache section)" >&2
+  exit 1
+}
+
 grep -Fq 'publish_step_summary: false' .github/workflows/build-matrix.yml || {
   echo "FAIL: matrix child jobs should not publish separate job summaries" >&2
   exit 1

@@ -40,6 +40,10 @@ package_family=MELT
 kernel_source=melt
 kernel_source_author=Melt
 rom_support=Official Xiaomi stock HyperOS only
+ccache_hit=false
+thinlto_cache_hit=false
+ccache_key=marble-builder-ccache-v4-test-key
+thinlto_cache_key=marble-builder-thinlto-v1-test-key
 manager=${manager}
 manager_repo=${manager_repo}
 manager_ref=${manager_ref}
@@ -93,6 +97,10 @@ required_patterns=(
   '\| .*Toolchain.* \| `android-r416183b` \|'
   '\| .*Package family.* \| `MELT` \|'
   'badge/LTO-thin'
+  '^## .*Cache$'
+  'marble-ci-cache-start'
+  'Actions ccache'
+  'GitHub Release notes'
   '^## .*Managers$'
   '\| \*\*KernelSU-Next\*\* \| `v3\.2\.0` \| `33201` \|'
   '\| \*\*SukiSU Ultra\*\* \| `v4\.1\.3-b88403d2@HEAD` \| `40813` \|'
@@ -138,6 +146,24 @@ for pattern in "${required_patterns[@]}"; do
     exit 1
   fi
 done
+
+# Cache section must not appear in release-stripped notes.
+release_notes="${tmp_dir}/matrix-summary-release.md"
+# shellcheck disable=SC1091
+source scripts/lib/summary-common.sh
+summary_strip_cache_section "${summary}" "${release_notes}"
+if grep -Eq 'marble-ci-cache|Actions ccache' "${release_notes}"; then
+  echo "FAIL: release notes still contain CI cache section" >&2
+  exit 1
+fi
+if grep -Eq '^## .*Cache$' "${release_notes}"; then
+  echo "FAIL: release notes still have Cache heading" >&2
+  exit 1
+fi
+if ! grep -Eq 'Matrix configuration|Artifacts' "${release_notes}"; then
+  echo "FAIL: release notes lost main content after cache strip" >&2
+  exit 1
+fi
 
 if [[ "$(grep -cE '^## .*Installation$' "${summary}")" -ne 1 ]]; then
   echo "FAIL: matrix summary should contain one shared Installation section" >&2

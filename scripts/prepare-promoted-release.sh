@@ -118,6 +118,23 @@ BUILD_SCOPE="${BUILD_SCOPE:-${detected_scope}}" \
 SOURCE_RUN_NUMBER="${SOURCE_RUN_NUMBER}" \
   bash scripts/generate-matrix-summary.sh >/dev/null
 
+# Release notes: full matrix summary minus CI-only Cache section.
+# shellcheck disable=SC1091
+source scripts/lib/summary-common.sh
+if [[ -z "${RELEASE_NOTES_FILE:-}" ]]; then
+  if [[ "${MATRIX_SUMMARY}" == */* ]]; then
+    RELEASE_NOTES_FILE="$(dirname "${MATRIX_SUMMARY}")/matrix-summary-release.md"
+  else
+    RELEASE_NOTES_FILE="matrix-summary-release.md"
+  fi
+fi
+summary_strip_cache_section "${MATRIX_SUMMARY}" "${RELEASE_NOTES_FILE}"
+if grep -E 'marble-ci-cache|^## .*Cache$' "${RELEASE_NOTES_FILE}" >/dev/null; then
+  echo "::error::Cache section leaked into release notes file ${RELEASE_NOTES_FILE}"
+  exit 1
+fi
+
 mv "${assets_tmp}" "${RELEASE_ASSETS_FILE}"
 trap - EXIT
 echo "Prepared $(wc -l < "${RELEASE_ASSETS_FILE}") verified release ZIP(s)"
+echo "Release notes (no CI cache section): ${RELEASE_NOTES_FILE}"

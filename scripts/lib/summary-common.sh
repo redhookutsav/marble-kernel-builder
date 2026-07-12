@@ -56,8 +56,12 @@ summary_format_ccache_hits() {
     echo "n/a"
     return
   fi
+  # Prefer the indented "Hits:" line under Cacheable calls (modern ccache -s).
   local rate
-  rate="$(grep -Ei 'hit rate|Hits:' "${f}" | head -n1 | sed -E 's/^[^:]*:[[:space:]]*//')"
+  rate="$(grep -E '^[[:space:]]+Hits:' "${f}" | head -n1 | sed -E 's/^[^:]*:[[:space:]]*//')"
+  if [[ -z "${rate}" ]]; then
+    rate="$(grep -Ei 'hit rate|Hits:' "${f}" | head -n1 | sed -E 's/^[^:]*:[[:space:]]*//')"
+  fi
   echo "${rate:-see ccache-stats.txt}"
 }
 
@@ -67,5 +71,65 @@ summary_quality_label() {
     echo "melt-stable-candidate"
   else
     echo "los-experimental"
+  fi
+}
+
+# Markers wrap CI-only cache details so release notes can strip them.
+SUMMARY_CACHE_START='<!-- marble-ci-cache-start -->'
+SUMMARY_CACHE_END='<!-- marble-ci-cache-end -->'
+
+# Emit a cache section to stdout (for CI/artifacts only — stripped before GitHub Release notes).
+# Args: ccache_hit thinlto_hit ccache_stats_line [ccache_key] [thinlto_key] [extra_markdown_rows...]
+summary_emit_cache_section() {
+  local ccache_hit="${1:-unknown}"
+  local thinlto_hit="${2:-n/a}"
+  local stats_line="${3:-n/a}"
+  local ccache_key="${4:-}"
+  local thinlto_key="${5:-}"
+
+  echo "${SUMMARY_CACHE_START}"
+  echo "## 💾 Cache"
+  echo
+  echo "> CI diagnostics only — this section is **not** included in GitHub Release notes."
+  echo
+  echo "| | |"
+  echo "|:---|:---|"
+  echo "| 📦 **Actions ccache hit** | \`${ccache_hit}\` |"
+  echo "| 🧵 **Actions ThinLTO hit** | \`${thinlto_hit}\` |"
+  echo "| 📊 **ccache object hits** | ${stats_line} |"
+  if [[ -n "${ccache_key}" ]]; then
+    echo "| 🔑 **ccache key** | \`${ccache_key}\` |"
+  fi
+  if [[ -n "${thinlto_key}" ]]; then
+    echo "| 🔑 **ThinLTO key** | \`${thinlto_key}\` |"
+  fi
+  echo
+  echo "${SUMMARY_CACHE_END}"
+}
+
+# Strip CI-only cache section markers from a markdown file.
+# Usage: summary_strip_cache_section input.md [output.md]
+# If output omitted, prints to stdout.
+summary_strip_cache_section() {
+  local input="${1:-}"
+  local output="${2:-}"
+  if [[ -z "${input}" || ! -f "${input}" ]]; then
+    echo "::error::summary_strip_cache_section: missing input ${input}" >&2
+    return 1
+  fi
+  local stripped
+  stripped="$(
+    awk -v start="${SUMMARY_CACHE_START}" -v end="${SUMMARY_CACHE_END}" '
+      $0 == start { skip=1; next }
+      $0 == end { skip=0; next }
+      !skip { print }
+    ' "${input}"
+  )"
+  # Drop extra blank lines left where the section was removed (collapse 3+ → 2).
+  stripped="$(printf '%s\n' "${stripped}" | awk 'BEGIN{b=0} /^$/{b++; if(b<=2) print; next} {b=0; print}')"
+  if [[ -n "${output}" ]]; then
+    printf '%s\n' "${stripped}" > "${output}"
+  else
+    printf '%s\n' "${stripped}"
   fi
 }
