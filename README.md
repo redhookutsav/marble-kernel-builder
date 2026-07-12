@@ -49,8 +49,10 @@
 
 | Feature | Description |
 |--------|-------------|
+| 🧬 **Multi-kernel sources** | Dropdown: Melt (HyperOS), LineageOS, Evolution-X, Pablo (LOS-based) |
 | 🤖 **Multi-manager builds** | KernelSU, KernelSU-Next, SukiSU Ultra, ReSukiSU, or a clean no-root baseline |
 | 🛡️ **SUSFS integration** | Optional SUSFS (`v2.2.0` / `v2.1.0` / custom) for supported managers |
+| 🔗 **Selectable LTO** | `none` · `thin` (default) · `full` — free-runner hardened for thin |
 | ⚙️ **GitHub Actions CI** | One-click matrix builds — single manager or parallel multi-manager |
 | 📦 **AnyKernel3 packages** | Flashable ZIPs with device checks and automatic boot backup |
 | 🔒 **Pinned & verified** | Commit-pinned toolchains, allowlisted managers, policy tests, ZIP attestations |
@@ -157,9 +159,9 @@ Do **not** enable SUSFS with `none` or `kernelsu`.
 ### Quick start — build
 
 1. Open **[Actions → Build Marble Kernel → Run workflow](https://github.com/mohdakil2426/marble-kernel-builder/actions)**
-2. Choose **kernel source** from the dropdown (`melt` / `lineageos` / `evolution-x` / `pablo`)
+2. Choose **kernel source** (`melt` / `lineageos` / `evolution-x` / `pablo`)
 3. Select manager checkbox(es)
-4. Set SUSFS / optional source_ref override / toolchain / scope as needed
+4. Set **lto** (default `thin`), SUSFS, optional `source_ref`, **toolchain** (LOS → `llvm-22.1.8`), scope
 5. Run · download artifacts when green
 
 ### Draft release
@@ -206,11 +208,11 @@ Run in order. Verify each step before the next:
 
 | Step | What to build |
 |:----:|---------------|
-| **1** | `build_none` · SUSFS **off** · `image-only` |
-| **2** | `build_none` · `full` scope *(only if needed)* |
-| **3** | One root manager at a time · SUSFS **off** |
-| **4** | `kernelsu-next` / `sukisu-ultra` / `resukisu` · SUSFS **on** |
-| **5** | Combine managers in one matrix · optional `create_draft_release` |
+| **1** | `kernel_source=melt` · `build_none` · `lto=none` or `thin` · `image-only` |
+| **2** | Same with one manager · SUSFS **off** |
+| **3** | `kernelsu-next` / `sukisu-ultra` / `resukisu` · SUSFS **on** (boot-proven on Melt) |
+| **4** | LOS presets · `toolchain=llvm-22.1.8` · `lto=thin` · start with `build_none` |
+| **5** | Multi-manager matrix · optional `create_draft_release` |
 
 ---
 
@@ -246,10 +248,12 @@ AK3_Marble-HyperOS_NoRoot_NoSUSFS_r9.zip
 
 ## 🔒 Verified Defaults
 
-Last verified: **2026-06-23**
+Last updated: **2026-07-13** (branch `feature/los-kernel-source-presets`)
 
 | Component | Default / pin |
 |-----------|----------------|
+| **Kernel source** | `melt` · override via dropdown |
+| **LTO** | `thin` (`none` / `full` available) |
 | **SUSFS v2.2.0** | `gki-android12-5.10` · `4003ecf2…` |
 | **SUSFS v2.1.0** | `gki-android12-5.10` · `86114db0…` |
 | **KernelSU** | `tiann/KernelSU@main` · SUSFS disabled |
@@ -257,8 +261,8 @@ Last verified: **2026-06-23**
 | **KernelSU-Next + SUSFS** | `pershoot/KernelSU-Next@dev-susfs` |
 | **SukiSU Ultra** | `main` / `builtin` (SUSFS) |
 | **ReSukiSU** | `ReSukiSU/ReSukiSU@main` |
-| **Android Clang** | `clang-r416183b` · commit `6e3223f7…` |
-| **LLVM (experimental)** | `22.1.8` · SHA-256 verified |
+| **Android Clang** | `clang-r416183b` · commit `6e3223f7…` (Melt default) |
+| **LLVM 22.1.8** | Required for LOS armv9 · SHA-256 verified |
 | **AnyKernel3** | `dca9dc370838d919d56c1f59ec78b27a14a72c68` |
 
 Full pin table: [`docs/versions.md`](docs/versions.md)
@@ -275,23 +279,28 @@ Full pin table: [`docs/versions.md`](docs/versions.md)
 | **ccache** | 4 GiB (Melt) / 6 GiB (LLVM 22) · compression · multi-prefix restore-keys · **LTO** in identity |
 | **ThinLTO cache** | Separate Actions cache (`~/.cache/thinlto`) when `lto=thin` (Wild-style LTO reuse) |
 | **Policy** | Matrix policy tests once before fan-out |
-| **Disk** | Cleanup only if free space &lt; 20 GiB |
-| **Artifacts** | Zero recompression · 30-day retention |
+| **Disk** | Strong SDK cleanup for LTO / low free space (Wild-style) |
+| **LTO free-runner** | 16 GiB swap when `lto≠none` · ThinLTO jobs=2 · LLVM JOBS=2 |
+| **Artifacts** | Zero recompression · 30-day retention · matrix summary artifact |
 | **Permissions** | Build jobs `contents: read` · write only on optional release job |
 | **Provenance** | OIDC-backed artifact attestations on final ZIPs |
-| **Concurrency** | Groups prevent stacked accidental dispatches |
+| **Concurrency** | Groups include `kernel_source` + `lto` + susfs + scope |
 
 <details>
 <summary><b>Recent verification</b></summary>
 
 <br/>
 
-**2026-06-24** — commit `28f3830`
+**2026-07-12** — multi-kernel smoke (`build_none`, `image-only`) on `feature/los-kernel-source-presets`
 
-- [Three-manager matrix](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/28081895022)
-- [Protected promotion](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/28082454769)
+- Melt + Android clang — run [29189567468](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/29189567468)
+- LineageOS + LLVM 22.1.8 — [29191682569](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/29191682569)
+- Evolution-X + LLVM 22.1.8 — [29192417911](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/29192417911)
+- Pablo + LLVM 22.1.8 — [29192972075](https://github.com/mohdakil2426/marble-kernel-builder/actions/runs/29192972075)
 
-All ZIP checksums matched. Draft `marble-hyperos-r10` contained only clean flashable ZIPs.
+**2026-06-22** — Melt device boot: KernelSU-Next / SukiSU Ultra / ReSukiSU + SUSFS v2.2.0 (r46–r48)
+
+**2026-06-24** — historical matrix + draft release path on `main` lineage (`28f3830` / `b55fdd0`)
 
 </details>
 

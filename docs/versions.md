@@ -1,6 +1,6 @@
 # Verified Defaults
 
-Checked on 2026-06-23.
+Last updated: **2026-07-13** (aligned with branch `feature/los-kernel-source-presets` @ `8d18663`).
 
 | Component | Repo | Default Ref | Version / Commit |
 |---|---|---|---|
@@ -28,7 +28,7 @@ Manager repositories are allowlisted for normal builds. KernelSU-Next is officia
 
 The default Android compiler is retrieved with Git partial clone and sparse checkout, not a generated archive. The workflow verifies the remote branch resolves to the pinned commit before checking out `clang-r416183b`. This is intentional because repeated downloads of the official generated Gitiles archive produced different whole-archive SHA-256 values even though the underlying Git commit was unchanged.
 
-LLVM 22.1.8 is experimental for Marble. It is not the Android 12 / 5.10 default compiler; use it for test builds first and keep `android-r416183b` for release-safe builds until compile and boot behavior is verified.
+LLVM 22.1.8 is **required for LOS-family** kernels (armv9). For **Melt / HyperOS**, keep default `android-r416183b` for release-safe builds; use LLVM on Melt only for experiments.
 
 ## Clang LTO and free runners
 
