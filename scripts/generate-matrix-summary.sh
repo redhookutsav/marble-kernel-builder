@@ -102,6 +102,11 @@ susfs_commit="$(get_info "${first_info}" susfs_commit)"
 susfs_url="$(get_info "${first_info}" susfs_url)"
 android_clang_version="$(get_info "${first_info}" android_clang_version)"
 android_clang_commit="$(get_info "${first_info}" android_clang_commit)"
+toolchain_id="$(get_info "${first_info}" toolchain)"
+lto_mode="$(get_info "${first_info}" lto)"
+lto_mode="${lto_mode:-thin}"
+package_family="$(get_info "${first_info}" package_family)"
+enable_susfs_first="$(get_info "${first_info}" enable_susfs)"
 build_date="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 run_number="${SOURCE_RUN_NUMBER:-${GITHUB_RUN_NUMBER:-}}"
 susfs_display="${susfs_reported:-${susfs_version}}"
@@ -112,13 +117,14 @@ banner_ref="${GITHUB_SHA:-main}"
 banner_url="https://raw.githubusercontent.com/${builder_repo}/${banner_ref}/docs/assets/marble-banner.svg"
 
 manager_badge_url="https://img.shields.io/badge/Matrix-${manager_count}_managers_passed-4CAF50?logo=githubactions&logoColor=white"
-if [[ -n "${susfs_display}" ]]; then
+if [[ "${enable_susfs_first}" == "true" && -n "${susfs_display}" ]]; then
   susfs_badge_url="https://img.shields.io/badge/SUSFS-$(badge_encode "${susfs_display}")-FF6D00?logo=gitlab&logoColor=white"
 else
   susfs_badge_url="https://img.shields.io/badge/SUSFS-Disabled-757575?logo=gitlab&logoColor=white"
 fi
 device_badge_url="https://img.shields.io/badge/Device-Poco_F5_%2F_RN12_Turbo-EF5350"
 scope_badge_url="https://img.shields.io/badge/Scope-$(badge_encode "${BUILD_SCOPE}")-2088FF"
+lto_badge_url="https://img.shields.io/badge/LTO-$(badge_encode "${lto_mode}")-9C27B0"
 
 {
   echo '<div align="center">'
@@ -136,6 +142,7 @@ scope_badge_url="https://img.shields.io/badge/Scope-$(badge_encode "${BUILD_SCOP
   echo "<br/>"
   echo
   echo "[![Matrix](${manager_badge_url})](${workflow_run})"
+  echo "[![LTO](${lto_badge_url})](${workflow_run})"
   echo "[![SUSFS](${susfs_badge_url})](${susfs_url:-https://gitlab.com/simonpunk/susfs4ksu})"
   echo "[![Device](${device_badge_url})](https://github.com/${source_repo})"
   echo "[![Scope](${scope_badge_url})](${workflow_run})"
@@ -182,12 +189,19 @@ scope_badge_url="https://img.shields.io/badge/Scope-$(badge_encode "${BUILD_SCOP
   fi
   echo "| 🧬 **Kernel base** | \`android12-5.10\` |"
   echo "| 🛠️ **Build scope** | \`${BUILD_SCOPE}\` |"
+  if [[ -n "${package_family}" ]]; then
+    echo "| 🏷️ **Package family** | \`${package_family}\` |"
+  fi
+  echo "| 🔗 **LTO** | \`${lto_mode}\` |"
+  if [[ -n "${toolchain_id}" ]]; then
+    echo "| 🧰 **Toolchain** | \`${toolchain_id}\` |"
+  fi
   echo "| 📦 **Source** | [\`${source_ref} @ $(short_commit "${source_commit}")\`](https://github.com/${source_repo}/commit/${source_commit}) |"
   echo "| 🔨 **Compiler** | \`${android_clang_version:-clang-r416183b}\` |"
   if [[ -n "${android_clang_commit}" ]]; then
     echo "| 🧷 **Compiler commit** | \`$(short_commit "${android_clang_commit}")\` |"
   fi
-  if [[ -n "${susfs_display}" ]]; then
+  if [[ "${enable_susfs_first}" == "true" && -n "${susfs_display}" ]]; then
     echo "| 🛡️ **SUSFS** | \`${susfs_display}\` · \`${susfs_branch}\` · [\`$(short_commit "${susfs_commit}")\`](${susfs_url}) |"
   else
     echo "| 🛡️ **SUSFS** | Disabled |"

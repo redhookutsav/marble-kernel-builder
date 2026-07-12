@@ -34,6 +34,12 @@ runner_image_os=ubuntu24
 runner_image_version=20260615.205.1
 android_clang_version=clang-r416183b
 android_clang_commit=6e3223f76384455acde43affde3df0ea9df66c0d
+toolchain=android-r416183b
+lto=thin
+package_family=MELT
+kernel_source=melt
+kernel_source_author=Melt
+rom_support=Official Xiaomi stock HyperOS only
 manager=${manager}
 manager_repo=${manager_repo}
 manager_ref=${manager_ref}
@@ -83,6 +89,10 @@ required_patterns=(
   'Before you flash'
   'Match \*\*device \+ ROM\*\*'
   '^## .*Matrix configuration$'
+  '\| .*LTO.* \| `thin` \|'
+  '\| .*Toolchain.* \| `android-r416183b` \|'
+  '\| .*Package family.* \| `MELT` \|'
+  'badge/LTO-thin'
   '^## .*Managers$'
   '\| \*\*KernelSU-Next\*\* \| `v3\.2\.0` \| `33201` \|'
   '\| \*\*SukiSU Ultra\*\* \| `v4\.1\.3-b88403d2@HEAD` \| `40813` \|'
