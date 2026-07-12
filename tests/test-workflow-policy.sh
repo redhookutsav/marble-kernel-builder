@@ -30,7 +30,7 @@ required_core_patterns=(
   'inputs.toolchain'
   'compression-level: 0'
   'retention-days: 30'
-  'marble-builder-ccache-v2-'
+  'marble-builder-ccache-v3-'
   'runner_image_version='
   'ccache_hit='
   'publish_step_summary'
@@ -57,8 +57,29 @@ grep -Fq 'CCACHE_COMPILERCHECK=content' scripts/build-kernel.sh || {
   exit 1
 }
 
-grep -Fq 'ccache -M 2G' scripts/build-kernel.sh || {
-  echo "FAIL: ccache maximum is not 2 GiB" >&2
+grep -Fq 'ccache -M 4G' scripts/build-kernel.sh || {
+  echo "FAIL: ccache maximum is not 4 GiB" >&2
+  exit 1
+}
+
+grep -Fq 'compression=true' scripts/build-kernel.sh || {
+  echo "FAIL: ccache compression must stay enabled" >&2
+  exit 1
+}
+
+grep -Fq 'compression_level=6' scripts/build-kernel.sh || {
+  echo "FAIL: ccache compression_level=6 should be configured when supported" >&2
+  exit 1
+}
+
+grep -Fq 'lto${lto_mode}' .github/workflows/build-core.yml || \
+  grep -Fq -- '-lto' .github/workflows/build-core.yml || {
+  echo "FAIL: ccache key must include LTO mode in its identity" >&2
+  exit 1
+}
+
+grep -Fq 'echo "lto=${LTO:-thin}"' .github/workflows/build-core.yml || {
+  echo "FAIL: build-info.txt must record lto mode" >&2
   exit 1
 }
 

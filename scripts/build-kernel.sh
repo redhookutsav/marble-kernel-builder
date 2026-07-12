@@ -41,8 +41,11 @@ fi
 
 if [[ "${USE_CCACHE}" == "true" ]] && command -v ccache >/dev/null 2>&1; then
   export CC="ccache clang"
-  ccache -M 2G
+  # Same 4G cap for both toolchains (android-r416183b and llvm-22.1.8).
+  ccache -M 4G
   ccache -o compression=true
+  # compression_level is supported on modern ccache; ignore if unavailable.
+  ccache -o compression_level=6 2>/dev/null || true
   ccache -z || true
 else
   export CC="clang"

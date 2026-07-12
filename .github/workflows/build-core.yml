@@ -270,9 +270,11 @@ jobs:
             config/susfs-refs.json config/kernel-sources.json scripts/resolve-kernel-source.sh \
             | sha256sum | cut -d' ' -f1)"
           toolchain_id="${ACTIVE_TOOLCHAIN_ID:-${TOOLCHAIN}}"
-          prefix="marble-builder-ccache-v2-${RUNNER_OS}-${RUNNER_ARCH}-${toolchain_id}-${source_commit}"
+          lto_mode="${LTO:-thin}"
+          prefix="marble-builder-ccache-v3-${RUNNER_OS}-${RUNNER_ARCH}-${toolchain_id}-${source_commit}"
           manager_prefix="${prefix}-${MANAGER}"
-          key="${manager_prefix}-${manager_commit:-none}-${susfs_commit:-none}-${BUILD_SCOPE}-${config_hash}"
+          # Include LTO in identity so thin/full/none do not share object caches incorrectly.
+          key="${manager_prefix}-${manager_commit:-none}-${susfs_commit:-none}-${BUILD_SCOPE}-lto${lto_mode}-${config_hash}"
           {
             echo "key=${key}"
             echo "prefix=${prefix}"
@@ -332,6 +334,7 @@ jobs:
             echo "android_clang_commit=${ACTIVE_TOOLCHAIN_COMMIT}"
             echo "toolchain=${TOOLCHAIN}"
             echo "toolchain_digest=${ACTIVE_TOOLCHAIN_DIGEST}"
+            echo "lto=${LTO:-thin}"
             echo "ccache_key=${{ steps.cache-context.outputs.key }}"
             echo "ccache_hit=${{ steps.ccache-restore.outputs.cache-hit || 'false' }}"
             echo "disk_available_before_build_gib=${{ steps.disk-space.outputs.available_gib }}"
