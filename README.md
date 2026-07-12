@@ -89,9 +89,9 @@ Named after the project / author. Pick one in **Build Marble Kernel**:
 | `evolution-x` | Evolution-X | [`Evolution-X-Devices/kernel_xiaomi_sm8450`](https://github.com/Evolution-X-Devices/kernel_xiaomi_sm8450) | `cnb` | **LOS-based** custom ROMs only |
 | `pablo` | Pablo | [`aosp-pablo/android_kernel_xiaomi_sm8450`](https://github.com/aosp-pablo/android_kernel_xiaomi_sm8450) | `16` | **LOS-based** custom ROMs only |
 
-- **HyperOS (`melt`)** uses `marble_defconfig` and the default Android `clang-r416183b` toolchain.
+- **HyperOS (`melt`)** uses `marble_defconfig` and the default Android `clang-r416183b` toolchain; **LTO stays on** (default `thin`).
 - **LOS-family kernels** merge `gki_defconfig` + `vendor/waipio_GKI.config` + `vendor/xiaomi_GKI.config` + `vendor/marble_GKI.config` + `vendor/debugfs.config` (same chain as Lineage device trees).
-- **LOS-family kernels need `toolchain=llvm-22.1.8`** — they set `-march=armv9-a+…` which Android `clang-r416183b` (clang-12) rejects.
+- **LOS-family kernels need `toolchain=llvm-22.1.8`** — they set `-march=armv9-a+…` which Android `clang-r416183b` (clang-12) rejects. Prefer **`lto=thin`** plus the workflow swap setup on free runners.
 - Optional **`source_ref`** overrides the preset default branch/tag/commit.
 
 **CI flow (simplified):**
@@ -192,7 +192,8 @@ Do **not** enable SUSFS with `none` or `kernelsu`.
 | `source_ref` | *(empty)* | Optional branch/tag/commit override (preset default if empty) |
 | `build_scope` | `image-only` | `image-only` or `full` |
 | `toolchain` | `android-r416183b` | `android-r416183b` (default) or experimental `llvm-22.1.8` |
-| `enable_ccache` | `true` | ccache for compatible rebuilds |
+| `lto` | `thin` | Clang LTO mode: `none` · `thin` (default, free-runner safe) · `full` (needs more RAM) |
+| `enable_ccache` | `true` | ccache for compatible rebuilds (4 GiB cap; cache identity includes LTO) |
 | `create_draft_release` | `false` | Create one ZIP-only draft release after a full success |
 
 </details>
@@ -271,7 +272,7 @@ Full pin table: [`docs/versions.md`](docs/versions.md)
 | **Actions** | Official actions pinned to immutable commits · Dependabot weekly |
 | **Android Clang** | Partial clone + sparse checkout · pinned commit verified before use |
 | **LLVM 22.1.8** | Official release only · SHA-256 check · separate cache |
-| **ccache** | 2 GiB cap · key by compiler / source / manager / SUSFS / scope |
+| **ccache** | 4 GiB cap · compression on · key by compiler / source / manager / SUSFS / scope / **LTO** / config |
 | **Policy** | Matrix policy tests once before fan-out |
 | **Disk** | Cleanup only if free space &lt; 20 GiB |
 | **Artifacts** | Zero recompression · 30-day retention |

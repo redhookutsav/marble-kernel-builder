@@ -29,3 +29,19 @@ Manager repositories are allowlisted for normal builds. KernelSU-Next is officia
 The default Android compiler is retrieved with Git partial clone and sparse checkout, not a generated archive. The workflow verifies the remote branch resolves to the pinned commit before checking out `clang-r416183b`. This is intentional because repeated downloads of the official generated Gitiles archive produced different whole-archive SHA-256 values even though the underlying Git commit was unchanged.
 
 LLVM 22.1.8 is experimental for Marble. It is not the Android 12 / 5.10 default compiler; use it for test builds first and keep `android-r416183b` for release-safe builds until compile and boot behavior is verified.
+
+## Clang LTO and free runners
+
+Workflow input `lto` selects Clang LTO mode for all presets (`none` / `thin` / `full`). Default is **`thin`**.
+
+| Mode | Guidance |
+|------|----------|
+| `none` | Fastest link; use for debug/smoke builds when LTO is not required |
+| `thin` | **Default.** Free-runner safe with the build-core 16 GiB swap, JOBS caps for LLVM 22, and ThinLTO job limits |
+| `full` | Highest optimization; memory-heavy — prefer high-RAM hosts; may OOM on free GitHub-hosted runners (~7 GiB) |
+
+Notes:
+
+- **Melt / HyperOS** keeps LTO enabled (default `thin`) with Android `clang-r416183b`.
+- **LOS-family** presets (`lineageos`, `evolution-x`, `pablo`) should use `toolchain=llvm-22.1.8` and `lto=thin` on free runners; the workflow enables swap and caps parallelism to reduce OOM risk.
+- Ccache is capped at **4 GiB** with content-based compiler checks; the Actions cache key includes **LTO mode** so different LTO settings do not share object caches.
