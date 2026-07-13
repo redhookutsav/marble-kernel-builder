@@ -46,6 +46,10 @@ else
 fi
 if [[ -n "${_caller_package_family}" ]]; then
   PACKAGE_FAMILY="${_preset_package_family}"
+elif [[ -n "${_caller_kernel_source}" || -n "${_caller_rom_family}" ]]; then
+  # Caller overrode source/family — do not keep a stale PACKAGE_FAMILY from
+  # release/kernel-source.env (e.g. prior LOS resolve left PACKAGE_FAMILY=LOS).
+  PACKAGE_FAMILY=""
 fi
 unset _caller_rom_label _caller_rom_family _caller_kernel_source _caller_package_family
 unset _preset_rom_label _preset_rom_family _preset_kernel_source _preset_package_family

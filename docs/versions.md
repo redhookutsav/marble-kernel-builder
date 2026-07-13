@@ -16,6 +16,7 @@ Last updated: **2026-07-13** (aligned with branch `feature/los-kernel-source-pre
 | KernelSU | `tiann/KernelSU` | `main` | Official source; non-SUSFS builds only |
 | KernelSU-Next | `KernelSU-Next/KernelSU-Next` | `dev` | Official non-SUSFS ref |
 | KernelSU-Next + SUSFS | `pershoot/KernelSU-Next` | `dev-susfs` | Fork branch based on official `dev` with SUSFS integration; CI-proven on Marble run `27937351021` |
+| Manager version code | (computed in `read-manager-version.sh`) | Wild-style | `git rev-list --count HEAD + BASE` (KSUN/Suki/ReSuki: BASE 10200 if commits&lt;2684 else 30000; KernelSU BASE 30000), inject `DKSU_VERSION`/`KSU_VERSION` into Makefile; fallback to Makefile literal |
 | SukiSU Ultra | `SukiSU-Ultra/SukiSU-Ultra` | `main` | Official non-SUSFS ref |
 | SukiSU Ultra + SUSFS | `SukiSU-Ultra/SukiSU-Ultra` | `builtin` | Official branch with manager-side SUSFS support |
 | ReSukiSU | `ReSukiSU/ReSukiSU` | `main` | Official branch with manager-side SUSFS support |
