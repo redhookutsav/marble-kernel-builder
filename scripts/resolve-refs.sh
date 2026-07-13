@@ -76,17 +76,30 @@ if [[ "${ENABLE_SUSFS}" == "true" ]]; then
     fi
   fi
 
+  # Shallow resolve of SUSFS version from simonpunk/susfs4ksu. Cleanup must never
+  # fail this step: free runners occasionally race on partial-clone temp trees
+  # (observed: `rm: cannot remove '...': Directory not empty` under set -e).
   tmp_susfs="$(mktemp -d)"
+  cleanup_tmp_susfs() {
+    local dir="${1:-}"
+    [[ -n "${dir}" && -d "${dir}" ]] || return 0
+    chmod -R u+w "${dir}" 2>/dev/null || true
+    rm -rf "${dir}" 2>/dev/null || true
+  }
+  trap 'cleanup_tmp_susfs "${tmp_susfs}"' EXIT
+
   git clone --filter=blob:none --no-checkout "${SUSFS_REPO}" "${tmp_susfs}"
   git -C "${tmp_susfs}" checkout "${susfs_effective_ref}"
   susfs_commit="$(git -C "${tmp_susfs}" rev-parse HEAD)"
   susfs_reported_version="$(
-    find "${tmp_susfs}/kernel_patches" -path '*/include/linux/susfs.h' -type f -print0 |
-      xargs -0 grep -hoE 'SUSFS_VERSION[[:space:]]+"v[0-9]+\.[0-9]+\.[0-9]+"' |
+    find "${tmp_susfs}/kernel_patches" -path '*/include/linux/susfs.h' -type f -print0 2>/dev/null |
+      xargs -0 -r grep -hoE 'SUSFS_VERSION[[:space:]]+"v[0-9]+\.[0-9]+\.[0-9]+"' 2>/dev/null |
       head -n1 |
-      sed -E 's/.*"(v[^"]+)".*/\1/'
+      sed -E 's/.*"(v[^"]+)".*/\1/' || true
   )"
-  rm -rf "${tmp_susfs}"
+  cleanup_tmp_susfs "${tmp_susfs}"
+  trap - EXIT
+  tmp_susfs=""
 
   # GitLab commit URL for traceability in release notes
   susfs_url="https://gitlab.com/simonpunk/susfs4ksu/-/commit/${susfs_commit}"
