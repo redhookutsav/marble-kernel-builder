@@ -19,10 +19,10 @@
       "repo": "mohdakil2426/android_kernel_xiaomi_marble",
       "ref": "melt-rebase"
     },
-    "lineageos": {
-      "repo": "LineageOS/android_kernel_xiaomi_sm8450",
-      "ref": "lineage-23.2"
-    },
+  "redhookutsav": {
+  "repo": "redhookutsav/android_kernel_xiaomi_sm8450",
+  "ref": "droidspaces-gki-config"
+},
     "evolution-x": {
       "repo": "Evolution-X-Devices/kernel_xiaomi_sm8450",
       "ref": "cnb"
