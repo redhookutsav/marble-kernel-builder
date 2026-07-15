@@ -16,7 +16,7 @@ echo "${out}" | grep -Eq 'TOOLCHAIN=android-r416183b' || {
   exit 1
 }
 
-out="$(KERNEL_SOURCE=lineageos SOURCE_REF='' TOOLCHAIN=android-r416183b bash scripts/resolve-toolchain.sh)"
+out="$(KERNEL_SOURCE=redhookutsav SOURCE_REF='' TOOLCHAIN=android-r416183b bash scripts/resolve-toolchain.sh)"
 echo "${out}" | grep -q 'TOOLCHAIN=android-r416183b' || {
   echo "FAIL: explicit override should stick (got: ${out})" >&2
   exit 1
