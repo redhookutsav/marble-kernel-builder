@@ -15,7 +15,7 @@ banner="$(
 
 echo "${banner}" | grep -q 'Marble Kernel' || { echo "FAIL: missing title" >&2; exit 1; }
 echo "${banner}" | grep -q 'Family   : LOS' || { echo "FAIL: family" >&2; exit 1; }
-echo "${banner}" | grep -q 'Source   : lineageos' || { echo "FAIL: source" >&2; exit 1; }
+echo "${banner}" | grep -q 'Source   : redhookutsav' || { echo "FAIL: source" >&2; exit 1; }
 echo "${banner}" | grep -q 'SUSFS    : v2.2.0' || { echo "FAIL: susfs" >&2; exit 1; }
 echo "${banner}" | grep -q 'LTO      : thin' || { echo "FAIL: lto" >&2; exit 1; }
 
