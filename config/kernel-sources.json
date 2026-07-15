@@ -11,25 +11,25 @@
     "defconfig": "marble_defconfig",
     "notes": "Existing HyperOS-oriented Melt-based marble source. Default for stock HyperOS."
   },
-  "lineageos": {
-    "display": "LineageOS",
-    "author": "LineageOS",
-    "repo": "LineageOS/android_kernel_xiaomi_sm8450",
-    "default_ref": "lineage-23.2",
-    "rom_label": "LineageOS",
-    "rom_family": "los",
-    "rom_support": "LineageOS and LOS-based custom ROMs only",
-    "defconfig_mode": "gki_fragments",
-    "base_defconfig": "gki_defconfig",
-    "config_fragments": [
-      "vendor/waipio_GKI.config",
-      "vendor/xiaomi_GKI.config",
-      "vendor/marble_GKI.config",
-      "vendor/debugfs.config"
-    ],
-    "recommended_toolchain": "llvm-22.1.8",
-    "notes": "Official LineageOS SM8450 kernel (Poco F5 / marble). Custom LOS-based ROMs only. Needs llvm-22.1.8 (armv9 flags)."
-  },
+"redhookutsav": {
+  "display": "LineageOS (Droidspaces)",
+  "author": "redhookutsav",
+  "repo": "redhookutsav/android_kernel_xiaomi_sm8450",
+  "default_ref": "droidspaces-gki-config",
+  "rom_label": "LineageOS",
+  "rom_family": "los",
+  "rom_support": "LineageOS and LOS-based custom ROMs only",
+  "defconfig_mode": "gki_fragments",
+  "base_defconfig": "gki_defconfig",
+  "config_fragments": [
+    "vendor/waipio_GKI.config",
+    "vendor/xiaomi_GKI.config",
+    "vendor/marble_GKI.config",
+    "vendor/debugfs.config"
+  ],
+  "recommended_toolchain": "llvm-22.1.8",
+  "notes": "Fork of the official LineageOS SM8450 kernel (Poco F5 / marble) with Droidspaces-OSS kABI-safe GKI patches applied (CONFIG_SYSVIPC, CONFIG_POSIX_MQUEUE, CONFIG_IPC_NS, CONFIG_PID_NS + kABI padding patches). Custom LOS-based ROMs only. Needs llvm-22.1.8 (armv9 flags)."
+},
   "evolution-x": {
     "display": "Evolution-X",
     "author": "Evolution-X",
